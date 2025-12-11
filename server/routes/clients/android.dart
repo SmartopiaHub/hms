@@ -19,26 +19,26 @@ Future<Response> onRequest(RequestContext context) async {
     }
 
     final files = clientsDir.listSync();
-    final macosVersions = <String, File>{};
+    final androidVersions = <String, File>{};
     
     for (final file in files) {
       if (file is! File) continue;
       final fileName = file.path.split('/').last;
       
-      // Extract version from filename pattern: smartopia_learning_macos_<version>.dmg
-      final match = RegExp(r'smartopia_learning_macos_(\d+\.\d+\.\d+)\.dmg').firstMatch(fileName);
+      // Extract version from filename pattern: smartopia_learning_android_<version>.apk
+      final match = RegExp(r'smartopia_learning_android_(\d+\.\d+\.\d+)\.apk').firstMatch(fileName);
       if (match != null) {
         final version = match.group(1)!;
-        macosVersions[version] = file;
+        androidVersions[version] = file;
       }
     }
     
-    if (macosVersions.isEmpty) {
-      return Response(statusCode: HttpStatus.notFound, body: 'No macOS client versions found');
+    if (androidVersions.isEmpty) {
+      return Response(statusCode: HttpStatus.notFound, body: 'No Android client versions found');
     }
     
     // Sort versions and get latest
-    final sortedVersions = macosVersions.keys.toList()..sort((a, b) {
+    final sortedVersions = androidVersions.keys.toList()..sort((a, b) {
       final aParts = a.split('.').map(int.parse).toList();
       final bParts = b.split('.').map(int.parse).toList();
       for (int i = 0; i < 3; i++) {
@@ -50,14 +50,14 @@ Future<Response> onRequest(RequestContext context) async {
     });
     
     final latestVersion = sortedVersions.first;
-    final latestFile = macosVersions[latestVersion]!;
-    final fileName = 'smartopia_learning_macos_$latestVersion.dmg';
+    final latestFile = androidVersions[latestVersion]!;
+    final fileName = 'smartopia_learning_android_$latestVersion.apk';
 
     // Read file as bytes
     final bytes = await latestFile.readAsBytes();
 
     // Determine content type
-    const contentType = 'application/x-apple-diskimage';
+    const contentType = 'application/vnd.android.package-archive';
 
     // Return file with appropriate headers
     return Response.bytes(
@@ -71,7 +71,7 @@ Future<Response> onRequest(RequestContext context) async {
   } catch (e) {
     return Response(
       statusCode: HttpStatus.internalServerError, 
-      body: 'Failed to retrieve macOS client: $e'
+      body: 'Failed to retrieve Android client: $e'
     );
   }
 }

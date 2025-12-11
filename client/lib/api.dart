@@ -616,4 +616,12 @@ class ApiService {
     }
     return null;
   }
+
+  Future<Map<String, dynamic>?> getClientInfo() async {
+    final response = await httpGet('clients');
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    return null;
+  }
 }

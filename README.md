@@ -1,7 +1,7 @@
 # Homework Management System
 Smartopia Homework Management System (HMS) is a cross-platform solution for parents and children to manage homework and rewards. AI coders were heavily used in its development.
 
-## PFeatures
+## Features
 
 - Modern UI (responsive design)
 - Localization (Chinese/English)
