@@ -1,0 +1,12 @@
+include: package:very_good_analysis/analysis_options.5.1.0.yaml
+analyzer:
+  errors:
+    eol_at_end_of_file: ignore
+    flutter_style_todos: ignore
+    require_trailing_commas: ignore
+  exclude:
+    - build/**
+linter:
+  rules:
+    file_names: false
+    lines_longer_than_80_chars: false

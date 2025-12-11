@@ -1,0 +1,32 @@
+#!/bin/sh
+# filepath: .git/hooks/pre-commit
+
+# Function to increment version in pubspec.yaml
+increment_version() {
+    local pubspec_file="$1"
+    if [ -f "$pubspec_file" ]; then
+        # Get current version
+        current_version=$(grep "^version:" "$pubspec_file" | sed 's/version: //')
+        
+        # Split version into parts (major.minor.patch)
+        IFS='.' read -r major minor patch <<< "$current_version"
+        
+        # Increment patch version
+        new_patch=$((patch + 1))
+        new_version="$major.$minor.$new_patch"
+        
+        # Update pubspec.yaml
+        sed -i.bak "s/^version:.*/version: $new_version/" "$pubspec_file"
+        rm "$pubspec_file.bak"
+        
+        echo "Updated $pubspec_file: $current_version -> $new_version"
+        
+        # Stage the updated file
+        git add "$pubspec_file"
+    fi
+}
+
+# Find all pubspec.yaml files and increment versions
+find . -name "pubspec.yaml" -not -path "./.pub-cache/*" | while read pubspec; do
+    increment_version "$pubspec"
+done

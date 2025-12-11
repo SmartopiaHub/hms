@@ -1,0 +1,15 @@
+services:
+  smartopia-hms:
+    container_name: smartopia-hms
+    stdin_open: true
+    tty: true
+    image: smartopiahub/hms-server
+    environment:
+      - PORT=8088
+    ports:
+      - "8088:8088"
+    volumes:
+      - ./data:/data
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+networks: {}

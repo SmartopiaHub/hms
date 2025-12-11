@@ -1,0 +1,41 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "type": "dart",
+            "request": "launch",
+            "name": "Launch Dart Frog Server",
+            "program": "${workspaceFolder}/server/.dart_frog/server.dart",
+            "args": [
+                "--port",
+                "8088"
+            ]
+        },
+
+        {
+            "name": "client (macOS)",
+            "cwd": "client",
+            "request": "launch",
+            "type": "dart",
+            "args": [
+                "-d",
+                "macos"
+            ]
+        },
+
+        {
+            "name": "Flutter Web (Chrome)",
+            "type": "dart",
+            "request": "launch",
+            "program": "${workspaceFolder}/client/lib/main.dart",
+            "deviceId": "chrome",
+            "args": [
+                "--dart-define=API_URL=https://localhost:8088"
+            ]
+        }
+    ]
+}
