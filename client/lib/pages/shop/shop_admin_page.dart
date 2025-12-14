@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 import '../base.dart';
 import '../../authenticator.dart';
 import '../../api.dart';
-import '../../model/shop_item.dart';
+import '../../model/database.dart';
 import 'shop_item_edit_page.dart';
 
 class ShopAdminPage extends StatefulWidget {

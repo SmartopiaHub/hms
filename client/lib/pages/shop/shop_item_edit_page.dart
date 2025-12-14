@@ -9,7 +9,7 @@ import '../../notification.dart';
 import '../base.dart';
 import '../../authenticator.dart';
 import '../../api.dart';
-import '../../model/shop_item.dart';
+import '../../model/database.dart';
 import '../../server.dart';
 
 class ShopItemEditPage extends StatefulWidget {
@@ -38,7 +38,9 @@ class _ShopItemEditPageState extends PageBaseState<ShopItemEditPage> {
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.item?.title);
-    _descriptionController = TextEditingController(text: widget.item?.description);
+    _descriptionController = TextEditingController(
+      text: widget.item?.description,
+    );
     _costController = TextEditingController(text: widget.item?.cost.toString());
     _imageUrlController = TextEditingController(text: widget.item?.imageUrl);
     _isAvailable = widget.item?.isAvailable ?? true;
@@ -66,15 +68,14 @@ class _ShopItemEditPageState extends PageBaseState<ShopItemEditPage> {
   }
 
   @override
-  String get pageTitle => widget.item == null ? localizations.addItem : localizations.editItem;
+  String get pageTitle =>
+      widget.item == null ? localizations.addItem : localizations.editItem;
 
   @override
   bool get goBackButtonInAppBar => true;
 
   Future<void> _pickAndUploadImage() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-    );
+    final result = await FilePicker.platform.pickFiles(type: FileType.image);
     if (result != null) {
       setState(() {
         _isUploading = true;
@@ -83,7 +84,8 @@ class _ShopItemEditPageState extends PageBaseState<ShopItemEditPage> {
         final url = await apiService.uploadFile(result.files.single);
         if (url != null) {
           // Prepend server URL if it's a relative path
-          final fullUrl = url.startsWith('http') ? url : '${await getServerUrl()}$url';
+          final fullUrl =
+              url.startsWith('http') ? url : '${await getServerUrl()}$url';
           setState(() {
             _imageUrlController.text = fullUrl;
           });
@@ -119,7 +121,10 @@ class _ShopItemEditPageState extends PageBaseState<ShopItemEditPage> {
     }
 
     if (hasError) {
-      showErrorNotification(localizations.pleaseFillRequiredFields, context: context);
+      showErrorNotification(
+        localizations.pleaseFillRequiredFields,
+        context: context,
+      );
       return;
     }
 
@@ -136,10 +141,11 @@ class _ShopItemEditPageState extends PageBaseState<ShopItemEditPage> {
     );
 
     try {
-      final result = widget.item == null 
-        ? await apiService.createShopItem(newItem)
-        : await apiService.updateShopItem(newItem);
-      
+      final result =
+          widget.item == null
+              ? await apiService.createShopItem(newItem)
+              : await apiService.updateShopItem(newItem);
+
       if (mounted) {
         if (result != null) {
           Navigator.pop(context, true); // Return true to indicate success
@@ -216,13 +222,14 @@ class _ShopItemEditPageState extends PageBaseState<ShopItemEditPage> {
               const SizedBox(width: 8),
               ElevatedButton.icon(
                 onPressed: _isUploading ? null : _pickAndUploadImage,
-                icon: _isUploading
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.upload_file),
+                icon:
+                    _isUploading
+                        ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                        : const Icon(Icons.upload_file),
                 label: Text(localizations.upload),
               ),
             ],
@@ -241,27 +248,34 @@ class _ShopItemEditPageState extends PageBaseState<ShopItemEditPage> {
                 child: Image.network(
                   _imageUrlController.text,
                   fit: BoxFit.contain,
-                  headers: auth.token != null
-                      ? {'Authorization': 'Bearer ${auth.token}'}
-                      : null,
-                  errorBuilder: (context, error, stackTrace) => const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.broken_image, size: 48, color: Colors.grey),
-                        SizedBox(height: 8),
-                        Text('Failed to load image'),
-                      ],
-                    ),
-                  ),
+                  headers:
+                      auth.token != null
+                          ? {'Authorization': 'Bearer ${auth.token}'}
+                          : null,
+                  errorBuilder:
+                      (context, error, stackTrace) => const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.broken_image,
+                              size: 48,
+                              color: Colors.grey,
+                            ),
+                            SizedBox(height: 8),
+                            Text('Failed to load image'),
+                          ],
+                        ),
+                      ),
                   loadingBuilder: (context, child, loadingProgress) {
                     if (loadingProgress == null) return child;
                     return Center(
                       child: CircularProgressIndicator(
-                        value: loadingProgress.expectedTotalBytes != null
-                            ? loadingProgress.cumulativeBytesLoaded /
-                                loadingProgress.expectedTotalBytes!
-                            : null,
+                        value:
+                            loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                                : null,
                       ),
                     );
                   },
@@ -290,16 +304,17 @@ class _ShopItemEditPageState extends PageBaseState<ShopItemEditPage> {
               const SizedBox(width: 16),
               ElevatedButton(
                 onPressed: _isSaving ? null : _saveItem,
-                child: _isSaving
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : Text(localizations.save),
+                child:
+                    _isSaving
+                        ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                        : Text(localizations.save),
               ),
             ],
           ),

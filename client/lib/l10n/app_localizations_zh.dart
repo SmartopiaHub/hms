@@ -1105,5 +1105,51 @@ class AppLocalizationsZh extends AppLocalizations {
   String get taskReviewConfirmCreate => '确认并创建所有';
 
   @override
-  String get taskReviewGlobalSettings => '全局设置（应用于所有任务）';
+  String get taskReviewGlobalSettings => '全局设置 (应用于所有任务)';
+
+  @override
+  String get createTaskTitle => '创建任务';
+
+  @override
+  String get camera => '相机';
+
+  @override
+  String get galleryFiles => '相册 / 文件';
+
+  @override
+  String get voice => '语音';
+
+  @override
+  String get manual => '手动';
+
+  @override
+  String get recordVoice => '录音';
+
+  @override
+  String get recording => '正在录音...';
+
+  @override
+  String get recordingSaved => '录音已保存!';
+
+  @override
+  String get tapMicToRecord => '点击麦克风开始录音';
+
+  @override
+  String get useRecording => '使用录音';
+
+  @override
+  String get reviewTasks => '审查任务';
+
+  @override
+  String get noTasksToReview => '没有任务可审查';
+
+  @override
+  String errorSavingTasks(String error) {
+    return '保存任务时出错: $error';
+  }
+
+  @override
+  String failedToExtractTasks(String error) {
+    return '提取任务失败: $error';
+  }
 }

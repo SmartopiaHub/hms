@@ -8,7 +8,7 @@ import 'dart:io';
 import 'logger.dart';
 import 'model/database.dart';
 import 'model/mqtt.dart';
-import 'model/shop_item.dart';
+
 import 'server.dart';
 import 'sse.dart';
 import 'package:file_picker/file_picker.dart';

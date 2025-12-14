@@ -2233,6 +2233,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Global Settings (Apply to All Tasks)'**
   String get taskReviewGlobalSettings;
+
+  /// No description provided for @createTaskTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Task'**
+  String get createTaskTitle;
+
+  /// No description provided for @camera.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get camera;
+
+  /// No description provided for @galleryFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery / Files'**
+  String get galleryFiles;
+
+  /// No description provided for @voice.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice'**
+  String get voice;
+
+  /// No description provided for @manual.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual'**
+  String get manual;
+
+  /// No description provided for @recordVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Record Voice'**
+  String get recordVoice;
+
+  /// No description provided for @recording.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording...'**
+  String get recording;
+
+  /// No description provided for @recordingSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording Saved!'**
+  String get recordingSaved;
+
+  /// No description provided for @tapMicToRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap mic to record'**
+  String get tapMicToRecord;
+
+  /// No description provided for @useRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Recording'**
+  String get useRecording;
+
+  /// No description provided for @reviewTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Review Tasks'**
+  String get reviewTasks;
+
+  /// No description provided for @noTasksToReview.
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks to review'**
+  String get noTasksToReview;
+
+  /// No description provided for @errorSavingTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Error saving tasks: {error}'**
+  String errorSavingTasks(String error);
+
+  /// No description provided for @failedToExtractTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to extract tasks: {error}'**
+  String failedToExtractTasks(String error);
 }
 
 class _AppLocalizationsDelegate

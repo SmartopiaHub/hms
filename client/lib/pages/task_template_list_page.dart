@@ -225,7 +225,10 @@ class _TastTemplateListPageState extends PageBaseState<TastTemplateListPage> {
                     }
 
                     if (context.mounted) {
-                      Navigator.of(context, rootNavigator: true).pop(); // Close loading dialog
+                      Navigator.of(
+                        context,
+                        rootNavigator: true,
+                      ).pop(); // Close loading dialog
 
                       if (templates.isNotEmpty) {
                         final didChange = await GoRouter.of(
@@ -249,7 +252,7 @@ class _TastTemplateListPageState extends PageBaseState<TastTemplateListPage> {
                         if (context.mounted) {
                           Navigator.pop(context); // Close loading
                           showErrorNotification(
-                            'Failed to extract: $e',
+                            localizations.failedToExtractTasks(e.toString()),
                             context: context,
                           );
                         }

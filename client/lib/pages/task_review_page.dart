@@ -88,7 +88,7 @@ class _TaskReviewPageState extends PageBaseState<TaskReviewPage> {
   }
 
   @override
-  String get pageTitle => 'Review Tasks';
+  String get pageTitle => AppLocalizations.of(context)!.reviewTasks;
 
   @override
   bool get goBackButtonInAppBar => true;
@@ -107,6 +107,11 @@ class _TaskReviewPageState extends PageBaseState<TaskReviewPage> {
         if (_createdTaskIndices.contains(i)) continue;
 
         var task = _tasks[i];
+
+        // Ensure title is within 256 chars
+        if (task.title.length > 256) {
+          task = task.copyWith(title: task.title.substring(0, 256));
+        }
 
         // 1. Apply per-task assigned users
         final assigned = _taskAssignedUsers[i];
@@ -149,7 +154,10 @@ class _TaskReviewPageState extends PageBaseState<TaskReviewPage> {
       }
     } catch (e) {
       if (mounted) {
-        showErrorNotification('Error saving tasks: $e', context: context);
+        showErrorNotification(
+          loc.errorSavingTasks(e.toString()),
+          context: context,
+        );
       }
     } finally {
       if (mounted) {
@@ -165,7 +173,7 @@ class _TaskReviewPageState extends PageBaseState<TaskReviewPage> {
     final loc = AppLocalizations.of(context)!;
 
     if (_tasks.isEmpty) {
-      return Center(child: Text('No tasks to review'));
+      return Center(child: Text(loc.noTasksToReview));
     }
 
     return Column(

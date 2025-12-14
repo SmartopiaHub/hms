@@ -2,660 +2,332 @@
 // Licensed under the GNU General Public License v3.0 (GPL-3.0).
 // See https://www.gnu.org/licenses/gpl-3.0.html for details.
 
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:drift/drift.dart';
+import 'package:drift/native.dart';
 import 'package:smartopia_hms_shared/shared.dart';
 
-class User {
+part 'database.g.dart';
+
+/// A table to store user information
+class Users extends Table {
   /// The unique identifier for the user
-  final int id;
+  IntColumn get id => integer().autoIncrement()();
 
   /// A unique username column with a length between 3 and 32 characters.
-  final String username;
+  TextColumn get username => text().withLength(min: 3, max: 32)();
 
   /// Nickname column with a length between 3 and 32 characters.
-  final String? nickname;
+  TextColumn get nickname => text().withLength(min: 1, max: 32).nullable()();
 
   /// A password column with a suitable length (storing a hashed value).
-  final String password;
+  TextColumn get password => text().withLength(min: 8, max: 128)();
 
   /// A column to indicate if the user is a parent (true) or a child (false).
-  final bool isParent;
+  BoolColumn get isParent => boolean().withDefault(const Constant(true))();
 
   /// A column to indicate if the user is allowed to manage their own homework.
-  final bool allowSelfHomeworkManagement;
+  BoolColumn get allowSelfHomeworkManagement =>
+      boolean().withDefault(const Constant(false))();
+
+  /// User's notification settings
+  TextColumn get notificationSettings =>
+      text().map(notificationSettingConverter).nullable()();
 
   /// The ID of the point system selected by the user
-  final String? pointSystemId;
+  TextColumn get pointSystemId => text().nullable()();
 
-  /// Total points for the user (only relevant for children)
-  final int? totalPoints;
+  /// Total points accumulated by the user
+  IntColumn get totalPoints => integer().withDefault(const Constant(0))();
 
-  /// Redeemed points for the user (only relevant for children)
-  final int? redeemedPoints;
-
-  int get availablePoints {
-    if (totalPoints == null) {
-      return 0;
-    }
-    return totalPoints! - (redeemedPoints ?? 0);
-  }
-
-  const User(
-      {required this.id,
-      required this.username,
-      this.nickname,
-      required this.password,
-      required this.isParent,
-      this.allowSelfHomeworkManagement = false,
-      this.pointSystemId,
-      this.redeemedPoints,
-      this.totalPoints});
-  
-  factory User.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return User(
-      id: serializer.fromJson<int>(json['id']),
-      username: serializer.fromJson<String>(json['username']),
-      nickname: serializer.fromJson<String?>(json['nickname']),
-      password: serializer.fromJson<String>(json['password']),
-      isParent: serializer.fromJson<bool>(json['isParent']),
-      allowSelfHomeworkManagement: serializer.fromJson<bool>(json['allowSelfHomeworkManagement'] ?? false),
-      pointSystemId: serializer.fromJson<String?>(json['pointSystemId']),
-      totalPoints: json.containsKey('totalPoints') ? serializer.fromJson<int?>(json['totalPoints']) : null,
-      redeemedPoints: json.containsKey('redeemedPoints') ? serializer.fromJson<int?>(json['redeemedPoints']) : null,
-    );
-  }
-  
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
-      'username': serializer.toJson<String>(username),
-      'nickname': serializer.toJson<String?>(nickname),
-      'password': serializer.toJson<String>(password),
-      'isParent': serializer.toJson<bool>(isParent),
-      'allowSelfHomeworkManagement': serializer.toJson<bool>(allowSelfHomeworkManagement),
-      'pointSystemId': serializer.toJson<String?>(pointSystemId),
-    };
-  }
-
-  User copyWith(
-          {int? id,
-          String? username,
-          String? nickname,
-          String? password,
-          bool? isParent,
-          bool? allowSelfHomeworkManagement,
-          String? pointSystemId}) =>
-      User(
-        id: id ?? this.id,
-        username: username ?? this.username,
-        nickname: nickname ?? this.nickname,
-        password: password ?? this.password,
-        isParent: isParent ?? this.isParent,
-        allowSelfHomeworkManagement: allowSelfHomeworkManagement ?? this.allowSelfHomeworkManagement,
-        pointSystemId: pointSystemId ?? this.pointSystemId,
-      );
-  
+  /// Total points redeemed by the user
+  IntColumn get redeemedPoints => integer().withDefault(const Constant(0))();
 
   @override
-  String toString() {
-    return (StringBuffer('User(')
-          ..write('id: $id, ')
-          ..write('username: $username, ')
-          ..write('nickname: $nickname, ')
-          ..write('password: $password, ')
-          ..write('isParent: $isParent')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(id, username, nickname, password, isParent);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is User &&
-          other.id == this.id &&
-          other.username == this.username &&
-          other.nickname == this.nickname &&
-          other.password == this.password &&
-          other.isParent == this.isParent);
+  List<Set<Column>> get uniqueKeys => [
+    {username},
+  ];
 }
 
-class TaskTemplate {
+/// A table to store task templates
+class TaskTemplates extends Table {
   /// The unique identifier for the task template
-  final int id;
+  IntColumn get id => integer().autoIncrement()();
 
   /// The name of the task
-  final String title;
+  TextColumn get title => text().withLength(min: 1, max: 256)();
 
   /// The username of the creator
-  final String creator;
+  TextColumn get creator => text().withLength(min: 1, max: 32)();
 
   /// The users associated with the task
-  final List<String> assignedUsers;
+  TextColumn get assignedUsers => text().map(stringListConverter)();
 
   /// The tags associated with the task
-  final List<String>? tags;
+  TextColumn get tags => text().map(stringListConverter).nullable()();
 
   /// The priority of the task, represented as an integer, the higher the number, the higher the priority
-  final int priority;
+  IntColumn get priority => integer().withDefault(const Constant(0))();
 
   /// the number of minutes before the task is due when the user should be reminded
-  final int remind;
+  IntColumn get remind => integer().withDefault(const Constant(0))();
 
   /// The description of the task
-  final String? description;
+  TextColumn get description => text().nullable()();
 
   /// How often the task should be repeated
-  final RecurrencePattern recurrence;
+  TextColumn get recurrence => text().map(recurrencePatternConverter)();
 
-  /// Reward information
-  final RewardInfo? rewards;
+  /// Reward information (max points, description, etc.)
+  TextColumn get rewards =>
+      text().map(const RewardInfoConverter()).nullable()();
 
   /// Penalty for not completing the task
-  final String? penalty;
+  TextColumn get penalty => text().nullable()();
 
   /// Requires an attachment to be submitted for this task or not
-  final bool attachmentRequired;
+  BoolColumn get attachmentRequired =>
+      boolean().withDefault(const Constant(false))();
 
   /// Requires the user to submit the task or not
-  final bool submissionRequired;
+  BoolColumn get submissionRequired =>
+      boolean().withDefault(const Constant(true))();
 
   /// The time when the task was created
-  final DateTime creationTime;
+  DateTimeColumn get creationTime => dateTime()();
 
   /// The expected completion time duration in minutes for each of this task
-  final Duration expectedCompletionTimeInMinutes;
+  IntColumn get expectedCompletionTimeInMinutes =>
+      integer().map(const DurationConverter())();
 
   /// Setting how to notify the user about this task when it is overdue or completed
-  final NotificationSetting? notificationSetting;
-
-  const TaskTemplate(
-      {required this.id,
-      required this.title,
-      required this.creator,
-      required this.assignedUsers,
-      this.tags,
-      required this.priority,
-      required this.remind,
-      this.description,
-      required this.recurrence,
-      this.rewards,
-      this.penalty,
-      required this.attachmentRequired,
-      required this.submissionRequired,
-      required this.creationTime,
-      required this.expectedCompletionTimeInMinutes,
-      this.notificationSetting});
-  
-  factory TaskTemplate.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return TaskTemplate(
-      id: serializer.fromJson<int>(json['id']),
-      title: serializer.fromJson<String>(json['title']),
-      creator: serializer.fromJson<String>(json['creator']),
-      assignedUsers: stringListConverter
-          .fromJson(serializer.fromJson<Object?>(json['assignedUsers'])),
-      tags: json['tags'] == null ? null : stringListConverter.fromJson(serializer.fromJson<Object?>(json['tags'])),
-      priority: serializer.fromJson<int>(json['priority']),
-      remind: serializer.fromJson<int>(json['remind']),
-      description: serializer.fromJson<String?>(json['description']),
-      recurrence: recurrencePatternConverter
-          .fromJson(serializer.fromJson<Object?>(json['recurrence'])),
-      rewards: json['rewards'] == null ? null : RewardInfo.fromJson(json['rewards']),
-      penalty: serializer.fromJson<String?>(json['penalty']),
-      attachmentRequired: serializer.fromJson<bool>(json['attachmentRequired']),
-      submissionRequired: serializer.fromJson<bool>(json['submissionRequired']),
-      creationTime: serializer.fromJson<DateTime>(json['creationTime']),
-      expectedCompletionTimeInMinutes: DurationConverter()
-          .fromJson(serializer
-              .fromJson<Object?>(json['expectedCompletionTimeInMinutes'])),
-      notificationSetting: json['notificationSetting'] == null ? null : notificationSettingConverter
-          .fromJson(serializer.fromJson<Object?>(json['notificationSetting'])),
-    );
-  }
-  
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
-      'title': serializer.toJson<String>(title),
-      'creator': serializer.toJson<String>(creator),
-      'assignedUsers': serializer.toJson<Object?>(
-          stringListConverter.toJson(assignedUsers)),
-      'tags': tags == null ? null : serializer
-          .toJson<Object?>(stringListConverter.toJson(tags!)),
-      'priority': serializer.toJson<int>(priority),
-      'remind': serializer.toJson<int>(remind),
-      'description': serializer.toJson<String?>(description),
-      'recurrence': serializer.toJson<Object?>(
-          recurrencePatternConverter.toJson(recurrence)),
-      'rewards': rewards?.toJson(),
-      'penalty': serializer.toJson<String?>(penalty),
-      'attachmentRequired': serializer.toJson<bool>(attachmentRequired),
-      'submissionRequired': serializer.toJson<bool>(submissionRequired),
-      'creationTime': serializer.toJson<DateTime>(creationTime),
-      'expectedCompletionTimeInMinutes': serializer.toJson<Object?>(
-          DurationConverter().toJson(expectedCompletionTimeInMinutes)),
-      'notificationSetting': notificationSetting == null ? null : serializer.toJson<Object?>(
-          notificationSettingConverter.toJson(notificationSetting!)),
-    };
-  }
-
-  TaskTemplate copyWith(
-          {int? id,
-          String? title,
-          String? creator,
-          List<String>? assignedUsers,
-          Value<List<String>?> tags = const Value.absent(),
-          int? priority,
-          int? remind,
-          Value<String?> description = const Value.absent(),
-          RecurrencePattern? recurrence,
-          Value<RewardInfo?> rewards = const Value.absent(),
-          Value<String?> penalty = const Value.absent(),
-          bool? attachmentRequired,
-          bool? submissionRequired,
-          DateTime? creationTime,
-          Duration? expectedCompletionTimeInMinutes,
-          Value<NotificationSetting?> notificationSetting =
-              const Value.absent()}) =>
-      TaskTemplate(
-        id: id ?? this.id,
-        title: title ?? this.title,
-        creator: creator ?? this.creator,
-        assignedUsers: assignedUsers ?? this.assignedUsers,
-        tags: tags.present ? tags.value : this.tags,
-        priority: priority ?? this.priority,
-        remind: remind ?? this.remind,
-        description: description.present ? description.value : this.description,
-        recurrence: recurrence ?? this.recurrence,
-        rewards: rewards.present ? rewards.value : this.rewards,
-        penalty: penalty.present ? penalty.value : this.penalty,
-        attachmentRequired: attachmentRequired ?? this.attachmentRequired,
-        submissionRequired: submissionRequired ?? this.submissionRequired,
-        creationTime: creationTime ?? this.creationTime,
-        expectedCompletionTimeInMinutes: expectedCompletionTimeInMinutes ??
-            this.expectedCompletionTimeInMinutes,
-        notificationSetting: notificationSetting.present
-            ? notificationSetting.value
-            : this.notificationSetting,
-      );
-  
+  TextColumn get notificationSetting =>
+      text().map(notificationSettingConverter).nullable()();
 
   @override
-  String toString() {
-    return (StringBuffer('TaskTemplate(')
-          ..write('id: $id, ')
-          ..write('title: $title, ')
-          ..write('creator: $creator, ')
-          ..write('assignedUsers: $assignedUsers, ')
-          ..write('tags: $tags, ')
-          ..write('priority: $priority, ')
-          ..write('remind: $remind, ')
-          ..write('description: $description, ')
-          ..write('recurrence: $recurrence, ')
-          ..write('rewards: $rewards, ')
-          ..write('penalty: $penalty, ')
-          ..write('attachmentRequired: $attachmentRequired, ')
-          ..write('submissionRequired: $submissionRequired, ')
-          ..write('creationTime: $creationTime, ')
-          ..write(
-              'expectedCompletionTimeInMinutes: $expectedCompletionTimeInMinutes, ')
-          ..write('notificationSetting: $notificationSetting')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(
-      id,
-      title,
-      creator,
-      assignedUsers,
-      tags,
-      priority,
-      remind,
-      description,
-      recurrence,
-      rewards,
-      penalty,
-      attachmentRequired,
-      submissionRequired,
-      creationTime,
-      expectedCompletionTimeInMinutes,
-      notificationSetting);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is TaskTemplate &&
-          other.id == this.id &&
-          other.title == this.title &&
-          other.creator == this.creator &&
-          other.assignedUsers == this.assignedUsers &&
-          other.tags == this.tags &&
-          other.priority == this.priority &&
-          other.remind == this.remind &&
-          other.description == this.description &&
-          other.recurrence == this.recurrence &&
-          other.rewards == this.rewards &&
-          other.penalty == this.penalty &&
-          other.attachmentRequired == this.attachmentRequired &&
-          other.submissionRequired == this.submissionRequired &&
-          other.creationTime == this.creationTime &&
-          other.expectedCompletionTimeInMinutes ==
-              this.expectedCompletionTimeInMinutes &&
-          other.notificationSetting == this.notificationSetting);
+  List<Set<Column>> get uniqueKeys => [
+    {id},
+  ];
 }
 
-class Task {
+/// A table to store task instances
+class Tasks extends Table {
   /// The unique identifier for the task instance
-  final int id;
+  IntColumn get id => integer().autoIncrement()();
 
   /// The unique identifier for the task template
-  final int templateId;
+  IntColumn get templateId => integer()();
 
   /// The title of the task instance, derived from the template
-  final String title;
+  TextColumn get title => text().withLength(min: 1, max: 256)();
 
   /// The description of the task instance, derived from the template
-  final String? description;
+  TextColumn get description => text().nullable()();
 
   /// The tags associated with the task
-  final List<String>? tags;
+  TextColumn get tags => text().map(stringListConverter).nullable()();
 
   /// the number of minutes before the task is due when the user should be reminded
-  final int remind;
+  IntColumn get remind => integer().withDefault(const Constant(0))();
 
   /// The users associated with the task
-  final List<String> assignedUsers;
+  TextColumn get assignedUsers => text().map(stringListConverter)();
 
-  /// Reward information
-  final RewardInfo? rewards;
+  /// Reward information (max points, description, etc.)
+  TextColumn get rewards =>
+      text().map(const RewardInfoConverter()).nullable()();
 
   /// Penalty for not completing the task
-  final String? penalty;
+  TextColumn get penalty => text().nullable()();
 
   /// The start time of the task instance
-  final DateTime startTime;
+  DateTimeColumn get startTime => dateTime()();
 
   /// The due time of the task instance,
-  final DateTime dueTime;
+  DateTimeColumn get dueTime => dateTime()();
 
   /// The expected completion time duration in minutes for each of this task
-  final Duration expectedCompletionTimeInMinutes;
+  IntColumn get expectedCompletionTimeInMinutes =>
+      integer().map(const DurationConverter())();
 
   /// Setting how to notify the user about this task when it is overdue or completed
-  final NotificationSetting? notificationSetting;
+  TextColumn get notificationSetting =>
+      text().map(notificationSettingConverter).nullable()();
 
   /// The notification history for the task instance
-  final NotificationHistory? notificationHistory;
+  TextColumn get notificationHistory =>
+      text().map(notificationHistoryConverter).nullable()();
 
   /// The submitted files for the task instance
-  final List<String>? submittedFiles;
+  TextColumn get submittedFiles => text().map(stringListConverter).nullable()();
 
   /// The time when the task instance was completed
-  final DateTime? completionTime;
+  DateTimeColumn get completionTime => dateTime().nullable()();
 
   /// The time when the task instance was evaluated
-  final DateTime? evaluationTime;
+  DateTimeColumn get evaluationTime => dateTime().nullable()();
 
   /// The username of evaluator of the task instance
-  final String? evaluator;
+  TextColumn get evaluator => text().withLength(min: 1, max: 32).nullable()();
 
   /// Indicates if the task instance requires an attachment to be submitted
-  final bool attachmentRequired;
-
-  /// Indicates if the task instance is cancelled or not
-  final bool cancelled;
+  BoolColumn get attachmentRequired =>
+      boolean().withDefault(const Constant(false))();
 
   /// Requires the user to submit the task or not
-  final bool submissionRequired;
-  const Task(
-      {required this.id,
-      required this.templateId,
-      // below are from task template
-      required this.title,
-      this.description,
-      this.tags,
-      required this.remind,
-      required this.assignedUsers,
-      this.rewards,
-      this.penalty,
-      required this.startTime,
-      required this.expectedCompletionTimeInMinutes,
-      this.notificationSetting,
-      // below are specific to task instance
-      required this.dueTime,
-      this.notificationHistory,
-      this.submittedFiles,
-      this.completionTime,
-      this.evaluationTime,
-      this.evaluator,
-      this.cancelled = false,
-      required this.attachmentRequired,
-      required this.submissionRequired});
-  
-  factory Task.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return Task(
-      id: serializer.fromJson<int>(json['id']),
-      templateId: serializer.fromJson<int>(json['templateId']),
-      title: serializer.fromJson<String>(json['title']),
-      description: serializer.fromJson<String?>(json['description']),
-      tags: json['tags'] == null
-          ? null: stringListConverter
-          .fromJson(serializer.fromJson<Object?>(json['tags'])),
-      remind: serializer.fromJson<int>(json['remind']),
-      assignedUsers: stringListConverter
-          .fromJson(serializer.fromJson<Object?>(json['assignedUsers'])),
-      rewards: json['rewards'] == null ? null : RewardInfo.fromJson(json['rewards']),
-      penalty: serializer.fromJson<String?>(json['penalty']),
-      startTime: serializer.fromJson<DateTime>(json['startTime']),
-      dueTime: serializer.fromJson<DateTime>(json['dueTime']),
-      expectedCompletionTimeInMinutes: DurationConverter()
-          .fromJson(serializer
-              .fromJson<Object?>(json['expectedCompletionTimeInMinutes'])),
-      notificationSetting: json['notificationSetting'] == null ? null : notificationSettingConverter
-          .fromJson(serializer.fromJson<Object?>(json['notificationSetting'])),
-      notificationHistory: json['notificationHistory'] == null ? null : notificationHistoryConverter
-          .fromJson(serializer.fromJson<Object?>(json['notificationHistory'])),
-      submittedFiles: json['submittedFiles'] == null
-          ? null : stringListConverter
-          .fromJson(serializer.fromJson<Object?>(json['submittedFiles'])),
-      completionTime: serializer.fromJson<DateTime?>(json['completionTime']),
-      evaluationTime: serializer.fromJson<DateTime?>(json['evaluationTime']),
-      evaluator: serializer.fromJson<String?>(json['evaluator']),
-      attachmentRequired: serializer.fromJson<bool>(json['attachmentRequired']),
-      submissionRequired: serializer.fromJson<bool>(json['submissionRequired']),
-      cancelled: serializer.fromJson<bool>(json['cancelled'] ?? false),
-    );
-  }
-  
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
-      'templateId': serializer.toJson<int>(templateId),
-      'title': serializer.toJson<String>(title),
-      'description': serializer.toJson<String?>(description),
-      'tags': tags == null
-          ? null :
-          serializer.toJson<Object?>(stringListConverter.toJson(tags!)),
-      'remind': serializer.toJson<int>(remind),
-      'assignedUsers': serializer.toJson<Object?>(
-          stringListConverter.toJson(assignedUsers)),
-      'rewards': rewards?.toJson(),
-      'penalty': serializer.toJson<String?>(penalty),
-      'startTime': serializer.toJson<DateTime>(startTime),
-      'dueTime': serializer.toJson<DateTime>(dueTime),
-      'expectedCompletionTimeInMinutes': serializer.toJson<Object?>(DurationConverter()
-          .toJson(expectedCompletionTimeInMinutes)),
-      'notificationSetting': notificationSetting == null ? null : serializer.toJson<Object?>(
-          notificationSettingConverter
-          .toJson(notificationSetting!)),
-      'notificationHistory': notificationHistory == null ? null : serializer.toJson<Object?>(
-          notificationHistoryConverter
-          .toJson(notificationHistory!)),
-      'submittedFiles': submittedFiles == null ? null : serializer.toJson<Object?>(
-          stringListConverter.toJson(submittedFiles!)),
-      'completionTime': serializer.toJson<DateTime?>(completionTime),
-      'evaluationTime': serializer.toJson<DateTime?>(evaluationTime),
-      'evaluator': serializer.toJson<String?>(evaluator),
-      'attachmentRequired': serializer.toJson<bool>(attachmentRequired),
-      'submissionRequired': serializer.toJson<bool>(submissionRequired),
-      'cancelled': serializer.toJson<bool>(cancelled),
-    };
-  }
+  BoolColumn get submissionRequired =>
+      boolean().withDefault(const Constant(true))();
 
-  Task copyWith(
-          {int? id,
-          int? templateId,
-          String? title,
-          Value<String?> description = const Value.absent(),
-          Value<List<String>?> tags = const Value.absent(),
-          int? remind,
-          List<String>? assignedUsers,
-          Value<RewardInfo?> rewards = const Value.absent(),
-          Value<String?> penalty = const Value.absent(),
-          DateTime? startTime,
-          DateTime? dueTime,
-          Duration? expectedCompletionTimeInMinutes,
-          Value<NotificationSetting?> notificationSetting =
-              const Value.absent(),
-          Value<NotificationHistory?> notificationHistory =
-              const Value.absent(),
-          Value<List<String>?> submittedFiles = const Value.absent(),
-          Value<DateTime?> completionTime = const Value.absent(),
-          Value<DateTime?> evaluationTime = const Value.absent(),
-          Value<String?> evaluator = const Value.absent(),
-          bool? attachmentRequired,
-          bool? cancelled,
-          bool? submissionRequired}) =>
-      Task(
-        id: id ?? this.id,
-        templateId: templateId ?? this.templateId,
-        title: title ?? this.title,
-        description: description.present ? description.value : this.description,
-        tags: tags.present ? tags.value : this.tags,
-        remind: remind ?? this.remind,
-        assignedUsers: assignedUsers ?? this.assignedUsers,
-        rewards: rewards.present ? rewards.value : this.rewards,
-        penalty: penalty.present ? penalty.value : this.penalty,
-        startTime: startTime ?? this.startTime,
-        dueTime: dueTime ?? this.dueTime,
-        expectedCompletionTimeInMinutes: expectedCompletionTimeInMinutes ??
-            this.expectedCompletionTimeInMinutes,
-        notificationSetting: notificationSetting.present
-            ? notificationSetting.value
-            : this.notificationSetting,
-        notificationHistory: notificationHistory.present
-            ? notificationHistory.value
-            : this.notificationHistory,
-        submittedFiles:
-            submittedFiles.present ? submittedFiles.value : this.submittedFiles,
-        completionTime:
-            completionTime.present ? completionTime.value : this.completionTime,
-        evaluationTime:
-            evaluationTime.present ? evaluationTime.value : this.evaluationTime,
-        evaluator: evaluator.present ? evaluator.value : this.evaluator,
-        attachmentRequired: attachmentRequired ?? this.attachmentRequired,
-        submissionRequired: submissionRequired ?? this.submissionRequired,
-        cancelled: cancelled ?? this.cancelled,
-      );
-  
+  /// Requires the user to submit the task or not
+  BoolColumn get cancelled => boolean().withDefault(const Constant(false))();
 
   @override
-  String toString() {
-    return (StringBuffer('Task(')
-          ..write('id: $id, ')
-          ..write('templateId: $templateId, ')
-          ..write('title: $title, ')
-          ..write('description: $description, ')
-          ..write('tags: $tags, ')
-          ..write('remind: $remind, ')
-          ..write('assignedUsers: $assignedUsers, ')
-          ..write('rewards: $rewards, ')
-          ..write('penalty: $penalty, ')
-          ..write('startTime: $startTime, ')
-          ..write('dueTime: $dueTime, ')
-          ..write(
-              'expectedCompletionTimeInMinutes: $expectedCompletionTimeInMinutes, ')
-          ..write('notificationSetting: $notificationSetting, ')
-          ..write('notificationHistory: $notificationHistory, ')
-          ..write('submittedFiles: $submittedFiles, ')
-          ..write('completionTime: $completionTime, ')
-          ..write('evaluationTime: $evaluationTime, ')
-          ..write('evaluator: $evaluator, ')
-          ..write('attachmentRequired: $attachmentRequired, ')
-          ..write('submissionRequired: $submissionRequired')
-          ..write('cancelled: $cancelled')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hashAll([
-        id,
-        templateId,
-        title,
-        description,
-        tags,
-        remind,
-        assignedUsers,
-        rewards,
-        penalty,
-        startTime,
-        dueTime,
-        expectedCompletionTimeInMinutes,
-        notificationSetting,
-        notificationHistory,
-        submittedFiles,
-        completionTime,
-        evaluationTime,
-        evaluator,
-        attachmentRequired,
-        submissionRequired,
-        cancelled,
-      ]);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is Task &&
-          other.id == this.id &&
-          other.templateId == this.templateId &&
-          other.title == this.title &&
-          other.description == this.description &&
-          other.tags == this.tags &&
-          other.remind == this.remind &&
-          other.assignedUsers == this.assignedUsers &&
-          other.rewards == this.rewards &&
-          other.penalty == this.penalty &&
-          other.startTime == this.startTime &&
-          other.dueTime == this.dueTime &&
-          other.expectedCompletionTimeInMinutes ==
-              this.expectedCompletionTimeInMinutes &&
-          other.notificationSetting == this.notificationSetting &&
-          other.notificationHistory == this.notificationHistory &&
-          other.submittedFiles == this.submittedFiles &&
-          other.completionTime == this.completionTime &&
-          other.evaluationTime == this.evaluationTime &&
-          other.evaluator == this.evaluator &&
-          other.attachmentRequired == this.attachmentRequired &&
-          other.submissionRequired == this.submissionRequired &&
-          other.cancelled == this.cancelled);
+  List<Set<Column>> get uniqueKeys => [
+    {id},
+  ];
 }
 
+/// A table to store shop items
+class ShopItems extends Table {
+  /// The unique identifier for the shop item
+  IntColumn get id => integer().autoIncrement()();
 
+  /// The title of the item
+  TextColumn get title => text().withLength(min: 1, max: 256)();
+
+  /// The description of the item
+  TextColumn get description => text().nullable()();
+
+  /// The URL of the image
+  TextColumn get imageUrl => text().nullable()();
+
+  /// The cost of the item in points
+  IntColumn get cost => integer()();
+
+  /// Whether the item is available for redemption
+  BoolColumn get isAvailable => boolean().withDefault(const Constant(true))();
+
+  /// The ID of the creator (parent)
+  IntColumn get creatorId => integer()();
+}
+
+/// A table to store redemption history
+class Redemptions extends Table {
+  /// The unique identifier for the redemption
+  IntColumn get id => integer().autoIncrement()();
+
+  /// The ID of the user who redeemed the item
+  IntColumn get userId => integer()();
+
+  /// The title of the redeemed item (snapshot at redemption time)
+  TextColumn get itemTitle => text()();
+
+  /// The image URL of the redeemed item (snapshot at redemption time)
+  TextColumn get itemImageUrl => text().nullable()();
+
+  /// The cost of the item at the time of redemption
+  IntColumn get cost => integer()();
+
+  /// The date and time of redemption
+  DateTimeColumn get redeemedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// Database instance for the application
+@DriftDatabase(tables: [Users, TaskTemplates, Tasks, ShopItems, Redemptions])
+class AppDatabase extends _$AppDatabase {
+  /// Constructor for the AppDatabase class
+  AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
+
+  // Specify the database schema version
+  @override
+  int get schemaVersion => 10;
+
+  @override
+  MigrationStrategy get migration {
+    return MigrationStrategy(
+      onCreate: (Migrator m) async {
+        await m.createAll();
+      },
+      onUpgrade: (Migrator m, int from, int to) async {
+        if (from < 2) {
+          // we added the allowSelfHomeworkManagement column in the users table
+          await m.addColumn(
+            users,
+            users.allowSelfHomeworkManagement as GeneratedColumn<Object>,
+          );
+        }
+        if (from < 3) {
+          // we added the notificationSettings column in the users table
+          await m.addColumn(
+            users,
+            users.notificationSettings as GeneratedColumn<Object>,
+          );
+        }
+        if (from < 4) {
+          // we added the maxPoints column in the taskTemplates table
+          // await m.addColumn(taskTemplates, taskTemplates.maxPoints as GeneratedColumn<Object>);
+          // we added the pointSystemId column in the users table
+          await m.addColumn(
+            users,
+            users.pointSystemId as GeneratedColumn<Object>,
+          );
+          // we added the maxPoints column in the tasks table
+          // await m.addColumn(tasks, tasks.maxPoints as GeneratedColumn<Object>);
+        }
+        if (from < 5) {
+          // we added the rewards column in the taskTemplates table
+          await m.addColumn(
+            taskTemplates,
+            taskTemplates.rewards as GeneratedColumn<Object>,
+          );
+          // we added the rewards column in the tasks table
+          await m.addColumn(tasks, tasks.rewards as GeneratedColumn<Object>);
+        }
+        if (from < 6) {
+          // we added the totalPoints column in the users table
+          await m.addColumn(
+            users,
+            users.totalPoints as GeneratedColumn<Object>,
+          );
+        }
+        if (from < 7) {
+          // we added the redeemedPoints column in the users table
+          await m.addColumn(
+            users,
+            users.redeemedPoints as GeneratedColumn<Object>,
+          );
+          // we added the ShopItems table
+          await m.createTable(shopItems);
+        }
+        if (from < 8) {
+          // we added the Redemptions table
+          await m.createTable(redemptions);
+        }
+        if (from < 9) {
+          // Migration: Recreate Redemptions table with new schema
+          // Drop old table and create new one with itemTitle and itemImageUrl
+          await m.deleteTable('redemptions');
+          await m.createTable(redemptions);
+        }
+      },
+    );
+  }
+
+  static QueryExecutor _openConnection() {
+    return NativeDatabase.createInBackground(File('./data/app.db'));
+  }
+}
+
+AppDatabase _appDatabase = AppDatabase();
+
+/// Function to get the database instance
+AppDatabase get database => _appDatabase;
 
 extension TaskTemplateExtension on TaskTemplate {
   /// Returns the due duration for the task template.
-  Duration get dueDuration{
+  Duration get dueDuration {
     if (recurrence.duration != null) {
       return recurrence.duration!;
     } else {
@@ -663,7 +335,7 @@ extension TaskTemplateExtension on TaskTemplate {
     }
   }
 
-  Task? createTaskInstance(DateTime start, {bool cancelled = false}) {
+  Task createTaskInstance(DateTime start, {bool cancelled = false}) {
     // Create a new task instance based on this template
     return Task(
       id: 0, // ID will be auto-incremented by the database
@@ -681,7 +353,7 @@ extension TaskTemplateExtension on TaskTemplate {
       attachmentRequired: attachmentRequired,
       submissionRequired: submissionRequired,
       notificationSetting: notificationSetting,
-      cancelled: cancelled
+      cancelled: cancelled,
     );
   }
 }
@@ -702,17 +374,18 @@ enum TaskStatus {
   /// Task is graded
   graded,
 
-  /// Task is cancelled
+  /// Cancelled task
   cancelled,
 }
 
 extension TaskExtension on Task {
-
   /// Return the status of the task based on its properties
   TaskStatus get status {
+    // Check if the task is cancelled
     if (cancelled) {
       return TaskStatus.cancelled;
     }
+
     if (!isStarted) {
       return TaskStatus.notStarted;
     } else if (isCompleted) {
@@ -744,5 +417,34 @@ extension TaskExtension on Task {
   bool get isGraded {
     return rewards?.pointsAwarded != null;
   }
+}
 
+class RewardInfoConverter extends TypeConverter<RewardInfo, String> {
+  const RewardInfoConverter();
+
+  @override
+  RewardInfo fromSql(String fromDb) {
+    return RewardInfo.fromJson(json.decode(fromDb) as Map<String, dynamic>);
+  }
+
+  @override
+  String toSql(RewardInfo value) {
+    return json.encode(value.toJson());
+  }
+}
+
+/// Extension to get reward point information from User
+extension RewardPointInfoExtension on User {
+  /// Get the reward point information for the user
+  RewardPointInfo get rewardPointInfo {
+    return RewardPointInfo(
+      totalPoints: totalPoints,
+      redeemedPoints: redeemedPoints,
+    );
+  }
+
+  /// Get available points
+  int get availablePoints {
+    return totalPoints - redeemedPoints;
+  }
 }

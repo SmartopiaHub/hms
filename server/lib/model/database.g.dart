@@ -1,7 +1,3 @@
-// Copyright (c) Smartopia AI (smartopia.ai). All rights reserved.
-// Licensed under the GNU General Public License v3.0 (GPL-3.0).
-// See https://www.gnu.org/licenses/gpl-3.0.html for details.
-
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'database.dart';
@@ -249,7 +245,6 @@ class User extends DataClass implements Insertable<User> {
 
   /// Total points redeemed by the user
   final int redeemedPoints;
-  
   const User(
       {required this.id,
       required this.username,
@@ -610,7 +605,7 @@ class $TaskTemplatesTable extends TaskTemplates
   late final GeneratedColumn<String> title = GeneratedColumn<String>(
       'title', aliasedName, false,
       additionalChecks:
-          GeneratedColumn.checkTextLength(minTextLength: 1, maxTextLength: 64),
+          GeneratedColumn.checkTextLength(minTextLength: 1, maxTextLength: 256),
       type: DriftSqlType.string,
       requiredDuringInsert: true);
   static const VerificationMeta _creatorMeta =
@@ -1464,7 +1459,7 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
   late final GeneratedColumn<String> title = GeneratedColumn<String>(
       'title', aliasedName, false,
       additionalChecks:
-          GeneratedColumn.checkTextLength(minTextLength: 1, maxTextLength: 64),
+          GeneratedColumn.checkTextLength(minTextLength: 1, maxTextLength: 256),
       type: DriftSqlType.string,
       requiredDuringInsert: true);
   static const VerificationMeta _descriptionMeta =
@@ -2546,7 +2541,7 @@ class $ShopItemsTable extends ShopItems
   late final GeneratedColumn<String> title = GeneratedColumn<String>(
       'title', aliasedName, false,
       additionalChecks:
-          GeneratedColumn.checkTextLength(minTextLength: 1, maxTextLength: 64),
+          GeneratedColumn.checkTextLength(minTextLength: 1, maxTextLength: 256),
       type: DriftSqlType.string,
       requiredDuringInsert: true);
   static const VerificationMeta _descriptionMeta =

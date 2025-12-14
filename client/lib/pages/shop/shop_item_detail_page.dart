@@ -5,7 +5,7 @@
 import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 import '../../api.dart';
-import '../../model/shop_item.dart';
+import '../../model/database.dart';
 import '../../widgets/point_badge.dart';
 import '../../authenticator.dart';
 import 'package:provider/provider.dart';
@@ -37,16 +37,16 @@ class _ShopItemDetailPageState extends State<ShopItemDetailPage> {
           );
           Navigator.pop(context, true);
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to redeem item')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Failed to redeem item')));
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to redeem item: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to redeem item: $e')));
       }
     } finally {
       if (mounted) {
@@ -61,7 +61,8 @@ class _ShopItemDetailPageState extends State<ShopItemDetailPage> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     final auth = context.watch<AuthProvider>();
-    final canRedeem = (auth.rewardPointInfo.availablePoints) >= widget.item.cost;
+    final canRedeem =
+        (auth.rewardPointInfo.availablePoints) >= widget.item.cost;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -72,83 +73,107 @@ class _ShopItemDetailPageState extends State<ShopItemDetailPage> {
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 600),
-        child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              SizedBox(height: 80,),
-              if (widget.item.imageUrl != null && widget.item.imageUrl!.isNotEmpty)
-                Image.network(
-                widget.item.imageUrl!,
-                height: 300,
-                fit: BoxFit.contain,
-                headers: auth.token != null ? {'Authorization': 'Bearer ${auth.token}'} : null,
-                errorBuilder: (context, error, stackTrace) => const SizedBox(
-                  height: 300,
-                  child: Icon(Icons.shopping_bag, size: 100),
-                ),
-              )
-            else
-              const SizedBox(
-                height: 300,
-                child: Icon(Icons.shopping_bag, size: 100),
-              ),
-            const SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.all(1),
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: SingleChildScrollView(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          widget.item.title,
-                          style: Theme.of(context).textTheme.headlineMedium,
+                  SizedBox(height: 80),
+                  if (widget.item.imageUrl != null &&
+                      widget.item.imageUrl!.isNotEmpty)
+                    Image.network(
+                      widget.item.imageUrl!,
+                      height: 300,
+                      fit: BoxFit.contain,
+                      headers:
+                          auth.token != null
+                              ? {'Authorization': 'Bearer ${auth.token}'}
+                              : null,
+                      errorBuilder:
+                          (context, error, stackTrace) => const SizedBox(
+                            height: 300,
+                            child: Icon(Icons.shopping_bag, size: 100),
+                          ),
+                    )
+                  else
+                    const SizedBox(
+                      height: 300,
+                      child: Icon(Icons.shopping_bag, size: 100),
+                    ),
+                  const SizedBox(height: 10),
+                  Padding(
+                    padding: const EdgeInsets.all(1),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                widget.item.title,
+                                style:
+                                    Theme.of(context).textTheme.headlineMedium,
+                              ),
+                            ),
+                            PointBadge(
+                              points: widget.item.cost,
+                              pointSystemId: auth.pointSystemId,
+                              textColor: Colors.black54,
+                            ),
+                          ],
                         ),
-                      ),
-                      PointBadge(points: widget.item.cost, pointSystemId: auth.pointSystemId,textColor: Colors.black54),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  if (widget.item.description != null && widget.item.description!.isNotEmpty) ...[
-                    /*Text(
+                        const SizedBox(height: 16),
+                        if (widget.item.description != null &&
+                            widget.item.description!.isNotEmpty) ...[
+                          /*Text(
                       localizations.description,
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 8),*/
-                    Text(widget.item.description!),
-                    const SizedBox(height: 24),
-                  ],
-                  if(!auth.isParent)
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        onPressed: _isRedeeming || !canRedeem || !widget.item.isAvailable
-                            ? null
-                            : _redeemItem,
-                        child: _isRedeeming
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : Text(widget.item.isAvailable 
-                                ? (canRedeem ? localizations.redeem : localizations.notEnoughPoints) 
-                                : localizations.unavailable),
-                      ),
+                          Text(widget.item.description!),
+                          const SizedBox(height: 24),
+                        ],
+                        if (!auth.isParent)
+                          SizedBox(
+                            width: double.infinity,
+                            child: FilledButton(
+                              onPressed:
+                                  _isRedeeming ||
+                                          !canRedeem ||
+                                          !widget.item.isAvailable
+                                      ? null
+                                      : _redeemItem,
+                              child:
+                                  _isRedeeming
+                                      ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                      : Text(
+                                        widget.item.isAvailable
+                                            ? (canRedeem
+                                                ? localizations.redeem
+                                                : localizations.notEnoughPoints)
+                                            : localizations.unavailable,
+                                      ),
+                            ),
+                          ),
+                      ],
                     ),
+                  ),
                 ],
               ),
             ),
-          ],
+          ),
         ),
-      ),),),),
+      ),
     );
   }
 }

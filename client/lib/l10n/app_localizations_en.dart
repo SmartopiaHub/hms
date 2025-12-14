@@ -1153,4 +1153,50 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get taskReviewGlobalSettings => 'Global Settings (Apply to All Tasks)';
+
+  @override
+  String get createTaskTitle => 'Create Task';
+
+  @override
+  String get camera => 'Camera';
+
+  @override
+  String get galleryFiles => 'Gallery / Files';
+
+  @override
+  String get voice => 'Voice';
+
+  @override
+  String get manual => 'Manual';
+
+  @override
+  String get recordVoice => 'Record Voice';
+
+  @override
+  String get recording => 'Recording...';
+
+  @override
+  String get recordingSaved => 'Recording Saved!';
+
+  @override
+  String get tapMicToRecord => 'Tap mic to record';
+
+  @override
+  String get useRecording => 'Use Recording';
+
+  @override
+  String get reviewTasks => 'Review Tasks';
+
+  @override
+  String get noTasksToReview => 'No tasks to review';
+
+  @override
+  String errorSavingTasks(String error) {
+    return 'Error saving tasks: $error';
+  }
+
+  @override
+  String failedToExtractTasks(String error) {
+    return 'Failed to extract tasks: $error';
+  }
 }

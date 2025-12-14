@@ -658,5 +658,19 @@
   "noItemsAvailable": "暂无商品",
   "taskRewardPoints": "奖励积分",
   "taskReviewConfirmCreate": "确认并创建所有",
-  "taskReviewGlobalSettings": "全局设置（应用于所有任务）"
+  "taskReviewGlobalSettings": "全局设置 (应用于所有任务)",
+  "createTaskTitle": "创建任务",
+  "camera": "相机",
+  "galleryFiles": "相册 / 文件",
+  "voice": "语音",
+  "manual": "手动",
+  "recordVoice": "录音",
+  "recording": "正在录音...",
+  "recordingSaved": "录音已保存!",
+  "tapMicToRecord": "点击麦克风开始录音",
+  "useRecording": "使用录音",
+  "reviewTasks": "审查任务",
+  "noTasksToReview": "没有任务可审查",
+  "errorSavingTasks": "保存任务时出错: {error}",
+  "failedToExtractTasks": "提取任务失败: {error}"
 }

@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 import '../base.dart';
 import '../../api.dart';
-import '../../model/shop_item.dart';
+import '../../model/database.dart';
 import '../../widgets/point_badge.dart';
 import '../../authenticator.dart';
 import 'package:provider/provider.dart';
@@ -43,23 +43,27 @@ class _ShopListPageState extends PageBaseState<ShopListPage> {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (auth.isParent)
-            Builder(builder: (ctx) {
-              return FloatingActionButton(
-                heroTag: 'adminFab',
-                mini: true,
-                onPressed: (){
+            Builder(
+              builder: (ctx) {
+                return FloatingActionButton(
+                  heroTag: 'adminFab',
+                  mini: true,
+                  onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const ShopAdminPage()),
+                      MaterialPageRoute(
+                        builder: (context) => const ShopAdminPage(),
+                      ),
                     ).then((_) {
                       setState(() {
                         _itemsFuture = apiService.getShopItems();
                       });
                     });
                   },
-                child: const Icon(Icons.edit),
-              );
-            }),
+                  child: const Icon(Icons.edit),
+                );
+              },
+            ),
           const SizedBox(height: 8),
           FloatingActionButton(
             heroTag: 'historyFab',
@@ -105,7 +109,8 @@ class _ShopListPageState extends PageBaseState<ShopListPage> {
   @override
   Widget buildContent(BuildContext context) {
     final auth = context.read<AuthProvider>();
-    return ConstrainedBox(constraints: const BoxConstraints(maxWidth: 800),
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 800),
       child: FutureBuilder<List<ShopItem>>(
         future: _itemsFuture,
         builder: (context, snapshot) {
@@ -150,14 +155,26 @@ class _ShopListPageState extends PageBaseState<ShopListPage> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Expanded(
-                        child: item.imageUrl != null && item.imageUrl!.isNotEmpty
-                            ? Image.network(
-                                item.imageUrl!,
-                                fit: BoxFit.contain,
-                                headers: auth.token != null ? {'Authorization': 'Bearer ${auth.token}'} : null,
-                                errorBuilder: (context, error, stackTrace) => const Icon(Icons.shopping_bag, size: 48),
-                              )
-                            : const Icon(Icons.shopping_bag, size: 48),
+                        child:
+                            item.imageUrl != null && item.imageUrl!.isNotEmpty
+                                ? Image.network(
+                                  item.imageUrl!,
+                                  fit: BoxFit.contain,
+                                  headers:
+                                      auth.token != null
+                                          ? {
+                                            'Authorization':
+                                                'Bearer ${auth.token}',
+                                          }
+                                          : null,
+                                  errorBuilder:
+                                      (context, error, stackTrace) =>
+                                          const Icon(
+                                            Icons.shopping_bag,
+                                            size: 48,
+                                          ),
+                                )
+                                : const Icon(Icons.shopping_bag, size: 48),
                       ),
                       Padding(
                         padding: const EdgeInsets.all(8.0),
@@ -171,7 +188,10 @@ class _ShopListPageState extends PageBaseState<ShopListPage> {
                               overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 4),
-                            PointBadge(points: item.cost, pointSystemId: auth.pointSystemId,textColor: Colors.black54,
+                            PointBadge(
+                              points: item.cost,
+                              pointSystemId: auth.pointSystemId,
+                              textColor: Colors.black54,
                             ),
                           ],
                         ),
@@ -183,11 +203,9 @@ class _ShopListPageState extends PageBaseState<ShopListPage> {
             },
           );
         },
-      )
+      ),
     );
   }
-
-
 }
 
 /*

@@ -369,5 +369,35 @@
   "noItemsAvailable": "No items available",
   "taskRewardPoints": "Reward Points",
   "taskReviewConfirmCreate": "Confirm & Create All",
-  "taskReviewGlobalSettings": "Global Settings (Apply to All Tasks)"
+  "taskReviewGlobalSettings": "Global Settings (Apply to All Tasks)",
+  "createTaskTitle": "Create Task",
+  "camera": "Camera",
+  "galleryFiles": "Gallery / Files",
+  "voice": "Voice",
+  "manual": "Manual",
+  "recordVoice": "Record Voice",
+  "recording": "Recording...",
+  "recordingSaved": "Recording Saved!",
+  "tapMicToRecord": "Tap mic to record",
+  "useRecording": "Use Recording",
+  "reviewTasks": "Review Tasks",
+  "noTasksToReview": "No tasks to review",
+  "errorSavingTasks": "Error saving tasks: {error}",
+  "@errorSavingTasks": {
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Network error"
+      }
+    }
+  },
+  "failedToExtractTasks": "Failed to extract tasks: {error}",
+  "@failedToExtractTasks": {
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Network error"
+      }
+    }
+  }
 }

@@ -57,13 +57,21 @@ class _UserFormState extends PageBaseState<UserForm> {
   String get _passwordLabel => AppLocalizations.of(context)!.password;
   String get _nicknameLabel => AppLocalizations.of(context)!.nickname;
   String get _confirmLabel => AppLocalizations.of(context)!.confirmNewPassword;
-  String get _usernameRequired => AppLocalizations.of(context)!.signInRequireUsername;
-  String get _passwordTooShort => AppLocalizations.of(context)!.passwordMinLength;
-  String get _confirmRequired => AppLocalizations.of(context)!.confirmNewPassword;
-  String get _passwordMismatch => AppLocalizations.of(context)!.passwordMismatch;
-  String get _nicknameRequired => AppLocalizations.of(context)!.nickname + ' ' + AppLocalizations.of(context)!.required;
+  String get _usernameRequired =>
+      AppLocalizations.of(context)!.signInRequireUsername;
+  String get _passwordTooShort =>
+      AppLocalizations.of(context)!.passwordMinLength;
+  String get _confirmRequired =>
+      AppLocalizations.of(context)!.confirmNewPassword;
+  String get _passwordMismatch =>
+      AppLocalizations.of(context)!.passwordMismatch;
+  String get _nicknameRequired =>
+      AppLocalizations.of(context)!.nickname +
+      ' ' +
+      AppLocalizations.of(context)!.required;
   String get _isParentLabel => AppLocalizations.of(context)!.accountTypeParent;
-  String get _changingAccountTypeNotAllowed => AppLocalizations.of(context)!.changingAccountTypeNotAllowed;
+  String get _changingAccountTypeNotAllowed =>
+      AppLocalizations.of(context)!.changingAccountTypeNotAllowed;
 
   void _checkPasswordStrength(String pwd) {
     final strength = _calculatePasswordStrength(pwd);
@@ -93,9 +101,11 @@ class _UserFormState extends PageBaseState<UserForm> {
     super.initState();
     if (widget.initialUser != null) {
       _usernameCtrl.text = widget.initialUser!.username;
-      if (widget.initialUser?.nickname != null) _nicknameCtrl.text = widget.initialUser!.nickname!;
+      if (widget.initialUser?.nickname != null)
+        _nicknameCtrl.text = widget.initialUser!.nickname!;
       _isParent = widget.initialUser!.isParent;
-      _allowSelfHomeworkManagement = widget.initialUser!.allowSelfHomeworkManagement;
+      _allowSelfHomeworkManagement =
+          widget.initialUser!.allowSelfHomeworkManagement;
       _passwordCtrl.text = widget.initialUser!.password;
     } else {
       if (!kIsWeb) {
@@ -130,6 +140,8 @@ class _UserFormState extends PageBaseState<UserForm> {
       password: _passwordCtrl.text,
       isParent: widget.includeRoleOption ? _isParent : true,
       allowSelfHomeworkManagement: _allowSelfHomeworkManagement,
+      totalPoints: 0,
+      redeemedPoints: 0,
     );
     widget.onSubmit(user);
   }
@@ -143,7 +155,8 @@ class _UserFormState extends PageBaseState<UserForm> {
 
   @override
   Widget build(BuildContext context) {
-    return buildCard(context,
+    return buildCard(
+      context,
       blur: 10,
       padding: const EdgeInsets.all(16),
       borderRadius: BorderRadius.circular(20),
@@ -163,19 +176,25 @@ class _UserFormState extends PageBaseState<UserForm> {
           spacing: 16,
           children: [
             const SizedBox(height: 1),
-            
+
             TextFormField(
               enabled: widget.initialUser == null,
               style: theme.textTheme.formFieldText,
               controller: _usernameCtrl,
-              decoration: MyAppTheme.glassInputDecoration(labelText: _usernameLabel),
-              validator: (v) => v == null || v.isEmpty ? _usernameRequired : null,
+              decoration: MyAppTheme.glassInputDecoration(
+                labelText: _usernameLabel,
+              ),
+              validator:
+                  (v) => v == null || v.isEmpty ? _usernameRequired : null,
             ),
             TextFormField(
               controller: _nicknameCtrl,
               style: theme.textTheme.formFieldText,
-              decoration: MyAppTheme.glassInputDecoration(labelText: _nicknameLabel),
-              validator: (v) => v == null || v.isEmpty ? _nicknameRequired : null,
+              decoration: MyAppTheme.glassInputDecoration(
+                labelText: _nicknameLabel,
+              ),
+              validator:
+                  (v) => v == null || v.isEmpty ? _nicknameRequired : null,
             ),
             if (widget.initialUser == null)
               TextFormField(
@@ -186,11 +205,19 @@ class _UserFormState extends PageBaseState<UserForm> {
                 decoration: MyAppTheme.glassInputDecoration(
                   labelText: _passwordLabel,
                   suffixIcon: IconButton(
-                    icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
-                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                    ),
+                    onPressed:
+                        () => setState(
+                          () => _obscurePassword = !_obscurePassword,
+                        ),
                   ),
                 ),
-                validator: (v) => v == null || v.length < 8 ? _passwordTooShort : null,
+                validator:
+                    (v) => v == null || v.length < 8 ? _passwordTooShort : null,
               ),
             if (_passwordCtrl.text.isNotEmpty && widget.initialUser == null)
               Row(
@@ -206,9 +233,10 @@ class _UserFormState extends PageBaseState<UserForm> {
                   Text(
                     _strengthLabel,
                     style: TextStyle(
-                      color: _strength < 0.3
-                          ? Colors.red
-                          : _strength < 0.7
+                      color:
+                          _strength < 0.3
+                              ? Colors.red
+                              : _strength < 0.7
                               ? Colors.orange
                               : Colors.green,
                     ),
@@ -222,8 +250,12 @@ class _UserFormState extends PageBaseState<UserForm> {
                 decoration: MyAppTheme.glassInputDecoration(
                   labelText: _confirmLabel,
                   suffixIcon: IconButton(
-                    icon: Icon(_obscureConfirm ? Icons.visibility : Icons.visibility_off),
-                    onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
+                    icon: Icon(
+                      _obscureConfirm ? Icons.visibility : Icons.visibility_off,
+                    ),
+                    onPressed:
+                        () =>
+                            setState(() => _obscureConfirm = !_obscureConfirm),
                   ),
                 ),
                 validator: (v) {
@@ -238,7 +270,10 @@ class _UserFormState extends PageBaseState<UserForm> {
               ),
             if (widget.includeRoleOption) ...[
               Container(
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 20,
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: Colors.white.withOpacity(0.3)),
@@ -250,23 +285,29 @@ class _UserFormState extends PageBaseState<UserForm> {
                     Checkbox.adaptive(
                       activeColor: theme.colorScheme.primary,
                       value: _isParent,
-                      onChanged: !widget.allowChangeAccountType ? null : (v) {
-                        if (widget.allowChangeAccountType) {
-                          setState(() => _isParent = v == true);
-                        } else {
-                          showInfoNotification(
-                            _changingAccountTypeNotAllowed,
-                            context: context,
-                          );
-                        }
-                      },
+                      onChanged:
+                          !widget.allowChangeAccountType
+                              ? null
+                              : (v) {
+                                if (widget.allowChangeAccountType) {
+                                  setState(() => _isParent = v == true);
+                                } else {
+                                  showInfoNotification(
+                                    _changingAccountTypeNotAllowed,
+                                    context: context,
+                                  );
+                                }
+                              },
                     ),
                   ],
                 ),
               ),
               if (!_isParent) ...[
                 Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 20,
+                  ),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: Colors.white.withOpacity(0.3)),
@@ -274,12 +315,19 @@ class _UserFormState extends PageBaseState<UserForm> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(AppLocalizations.of(context)!.allowSelfHomeworkManagement, style: theme.textTheme.formFieldText),
+                      Text(
+                        AppLocalizations.of(
+                          context,
+                        )!.allowSelfHomeworkManagement,
+                        style: theme.textTheme.formFieldText,
+                      ),
                       Checkbox.adaptive(
                         activeColor: theme.colorScheme.primary,
                         value: _allowSelfHomeworkManagement,
                         onChanged: (v) {
-                          setState(() => _allowSelfHomeworkManagement = v == true);
+                          setState(
+                            () => _allowSelfHomeworkManagement = v == true,
+                          );
                         },
                       ),
                     ],

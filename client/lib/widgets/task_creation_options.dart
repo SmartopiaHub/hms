@@ -9,12 +9,14 @@ import 'package:record/record.dart';
 
 // ignore: depend_on_referenced_packages
 import 'package:path/path.dart' as p;
+import '../l10n/app_localizations.dart';
 
 class TaskCreationOptions extends StatelessWidget {
   const TaskCreationOptions({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(20),
       child: SafeArea(
@@ -23,7 +25,7 @@ class TaskCreationOptions extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Create Task',
+                loc.createTaskTitle,
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 20),
@@ -38,22 +40,22 @@ class TaskCreationOptions extends StatelessWidget {
                   if (!kIsWeb && (Platform.isIOS || Platform.isAndroid))
                     _OptionCard(
                       icon: Icons.camera_alt,
-                      label: 'Camera',
+                      label: loc.camera,
                       onTap: () => _handleCamera(context),
                     ),
                   _OptionCard(
                     icon: Icons.photo_library,
-                    label: 'Gallery / Files',
+                    label: loc.galleryFiles,
                     onTap: () => _handleGallery(context),
                   ),
                   _OptionCard(
                     icon: Icons.mic,
-                    label: 'Voice',
+                    label: loc.voice,
                     onTap: () => _handleVoice(context),
                   ),
                   _OptionCard(
                     icon: Icons.edit,
-                    label: 'Manual',
+                    label: loc.manual,
                     onTap: () => _handleManual(context),
                   ),
                 ],
@@ -211,20 +213,21 @@ class _VoiceRecorderDialogState extends State<VoiceRecorderDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: const Text('Record Voice'),
+      title: Text(loc.recordVoice),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (_isRecording)
-            const Text('Recording...', style: TextStyle(color: Colors.red))
+            Text(loc.recording, style: const TextStyle(color: Colors.red))
           else if (_path != null)
-            const Text(
-              'Recording Saved!',
-              style: TextStyle(color: Colors.green),
+            Text(
+              loc.recordingSaved,
+              style: const TextStyle(color: Colors.green),
             )
           else
-            const Text('Tap mic to record'),
+            Text(loc.tapMicToRecord),
 
           const SizedBox(height: 20),
 
@@ -246,14 +249,14 @@ class _VoiceRecorderDialogState extends State<VoiceRecorderDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(loc.cancel),
         ),
         TextButton(
           onPressed:
               _path != null && !_isRecording
                   ? () => Navigator.pop(context, _path)
                   : null,
-          child: const Text('Use Recording'),
+          child: Text(loc.useRecording),
         ),
       ],
     );
