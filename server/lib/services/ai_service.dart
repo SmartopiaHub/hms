@@ -232,11 +232,6 @@ Return tasks as a structured JSON array.
   /// Extracts tasks from voice using configured AI provider
   Future<List<Map<String, dynamic>>?> extractTasksFromVoice(File voice) async {
     try {
-      // for testing
-      if (File('data/test_tasks_raw_text.json').existsSync()) {
-        return _extractTasksRawJsonText(
-            File('data/test_tasks_raw_text.json').readAsStringSync());
-      }
 
       final transcription = await OpenAI.instance.audio.createTranscription(
         model: _defaultSTTModel,

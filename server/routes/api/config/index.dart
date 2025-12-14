@@ -20,7 +20,7 @@ Future<Response> onRequest(RequestContext context) async {
 
 Future<Response> _getConfig(RequestContext context) async {
   try {
-    final configFile = File('data/config.json');
+    final configFile = File('data/config/config.json');
 
     if (!await configFile.exists()) {
       // Return default config if file doesn't exist
@@ -61,7 +61,7 @@ Future<Response> _getConfig(RequestContext context) async {
 Future<Response> _updateConfig(RequestContext context) async {
   try {
     final body = await context.request.json() as Map<String, dynamic>;
-    final configFile = File('data/config.json');
+    final configFile = File('data/config/config.json');
 
     // Ensure the data directory exists
     if (!await configFile.parent.exists()) {

@@ -42,7 +42,7 @@ class MqttService {
   /// If the file does not exist or is invalid, returns null.
   MqttConfig? loadConfig() {
     try {
-      final configStr = File('./data/mqtt.json').readAsStringSync();
+      final configStr = File('./data/config/mqtt.json').readAsStringSync();
       if (configStr.isEmpty) {
         throw Exception('MQTT configuration file is empty');
       }
@@ -69,7 +69,7 @@ class MqttService {
   bool saveConfig(MqttConfig config) {
     try {
       final configStr = json.encode(config.toJson());
-      File('./data/mqtt.json').writeAsStringSync(configStr);
+      File('./data/config/mqtt.json').writeAsStringSync(configStr);
       logInfo('MQTT configuration saved: $config');
       return true;
     } catch (e, s) {

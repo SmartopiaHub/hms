@@ -158,12 +158,5 @@ Future<File> _saveToTemp(UploadedFile uploadedFile) async {
   final file = File('${tempDir.path}/${uploadedFile.name}');
   final bytes = await uploadedFile.readAsBytes();
   await file.writeAsBytes(bytes);
-  // for testing:
-  final dataDir = Directory('data');
-  if (!dataDir.existsSync()) {
-    dataDir.createSync(recursive: true);
-  }
-  final testFile = File('data/${uploadedFile.name}');
-  await testFile.writeAsBytes(bytes);
   return file;
 }

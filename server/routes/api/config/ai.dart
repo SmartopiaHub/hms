@@ -88,7 +88,7 @@ Future<Response> _saveConfig(RequestContext context) async {
 
 Future<Response> _deleteConfig(RequestContext context) async {
   try {
-    final file = File('data/ai_config.json');
+    final file = File('data/config/ai_config.json');
     if (await file.exists()) {
       await file.delete();
     }

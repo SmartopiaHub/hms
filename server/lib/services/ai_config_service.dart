@@ -3,7 +3,7 @@ import 'dart:io';
 
 /// Service to manage AI configuration settings
 class AiConfigService {
-  static const String _configFilePath = 'data/ai_config.json';
+  static const String _configFilePath = 'data/config/ai_config.json';
 
   AiConfig? _cachedConfig;
 

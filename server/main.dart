@@ -24,7 +24,7 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
   final users = await database.select(database.users).get();
   if (users.isEmpty) {
     logInfo('Creating default admin user...');
-    final configFile = File('./data/config.json');
+    final configFile = File('./data/config/config.json');
     var password = 'admin';
     if (configFile.existsSync()) {
       try {

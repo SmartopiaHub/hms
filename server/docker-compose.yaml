@@ -9,6 +9,7 @@ services:
     ports:
       - "8088:8088"
     volumes:
+      # Mount data directory (includes config/, uploads/, clients/, and database)
       - ./data:/data
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro

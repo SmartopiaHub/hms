@@ -66,7 +66,7 @@ Future<Response> _updateTask(RequestContext context, Task task, User evaluator, 
   //TODO: check assigned users and creator
 
   // Check if point system is enabled
-  final configFile = File('data/config.json');
+  final configFile = File('data/config/config.json');
   bool pointSystemEnabled = true; // Default to enabled
   
   if (await configFile.exists()) {
