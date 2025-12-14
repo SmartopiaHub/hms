@@ -366,5 +366,8 @@
   "costRequired": "Cost is required",
   "upload": "Upload",
   "unknownItem": "Unknown Item",
-  "noItemsAvailable": "No items available"
+  "noItemsAvailable": "No items available",
+  "taskRewardPoints": "Reward Points",
+  "taskReviewConfirmCreate": "Confirm & Create All",
+  "taskReviewGlobalSettings": "Global Settings (Apply to All Tasks)"
 }

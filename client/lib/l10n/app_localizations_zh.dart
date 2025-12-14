@@ -1097,4 +1097,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get noItemsAvailable => '暂无商品';
+
+  @override
+  String get taskRewardPoints => '奖励积分';
+
+  @override
+  String get taskReviewConfirmCreate => '确认并创建所有';
+
+  @override
+  String get taskReviewGlobalSettings => '全局设置（应用于所有任务）';
 }

@@ -2215,6 +2215,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No items available'**
   String get noItemsAvailable;
+
+  /// No description provided for @taskRewardPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Reward Points'**
+  String get taskRewardPoints;
+
+  /// No description provided for @taskReviewConfirmCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm & Create All'**
+  String get taskReviewConfirmCreate;
+
+  /// No description provided for @taskReviewGlobalSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Global Settings (Apply to All Tasks)'**
+  String get taskReviewGlobalSettings;
 }
 
 class _AppLocalizationsDelegate

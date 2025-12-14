@@ -2,6 +2,8 @@
 // Licensed under the GNU General Public License v3.0 (GPL-3.0).
 // See https://www.gnu.org/licenses/gpl-3.0.html for details.
 
+import '../config.dart';
+import 'recurrence_pattern.dart';
 import '../pages/base.dart';
 import '../themes/theme.dart';
 import '../utility.dart';
@@ -9,8 +11,8 @@ import 'card.dart';
 import 'package:flutter/material.dart';
 
 import 'package:go_router/go_router.dart';
+import 'package:smartopia_hms_client/widgets/number_field.dart';
 import 'package:smartopia_hms_shared/shared.dart';
-import 'package:smartopia_hms_shared/shared.dart' as shared;
 import '../model/database.dart';
 import '../widgets/point_badge.dart';
 import 'package:provider/provider.dart';
@@ -18,240 +20,338 @@ import '../authenticator.dart';
 import '../l10n/app_localizations.dart';
 
 String _formatDateTime(DateTime dt) {
-    final y = dt.year;
-    final m = dt.month.toString().padLeft(2, '0');
-    final d = dt.day.toString().padLeft(2, '0');
-    final h = dt.hour.toString().padLeft(2, '0');
-    final min = dt.minute.toString().padLeft(2, '0');
-    return '$y-$m-$d $h:$min';
+  final y = dt.year;
+  final m = dt.month.toString().padLeft(2, '0');
+  final d = dt.day.toString().padLeft(2, '0');
+  final h = dt.hour.toString().padLeft(2, '0');
+  final min = dt.minute.toString().padLeft(2, '0');
+  return '$y-$m-$d $h:$min';
 }
 
-
-
-Widget _formatDateTimeWidget(DateTime dt, {bool includeDate = true, bool includeTime = true}) {
-    final y = dt.year;
-    final m = dt.month.toString().padLeft(2, '0');
-    final d = dt.day.toString().padLeft(2, '0');
-    final h = dt.hour.toString().padLeft(2, '0');
-    final min = dt.minute.toString().padLeft(2, '0');
-    return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 5),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.white30),
-                borderRadius: BorderRadius.circular(8.0),
-          ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (includeDate) Icon(Icons.calendar_month , size: 14),
-            if (includeDate) const SizedBox(width: 4),
-            if (includeDate) Text('$y-$m-$d'),
-            if (includeDate) const SizedBox(width: 10),
-            if (includeTime) Icon(Icons.access_time , size: 14),
-            if (includeTime) const SizedBox(width: 4),
-            if (includeTime) Text('$h:$min'),
-            if (includeTime)  const SizedBox(width: 4),
-          ],
-        ),
-      );
-  }
-
-Widget _buildChip(String label, {bool isTime = true}) {
-    return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 5),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.white30),
-                borderRadius: BorderRadius.circular(8.0),
-          ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(isTime ? Icons.access_time : Icons.calendar_month , size: 14),
-            const SizedBox(width: 4),
-            Text(label),
-            const SizedBox(width: 4),
-          ],
-        ),
-      );
-}
-
-class TaskTemplateItem extends StatelessWidget {
+class TaskTemplateItem extends StatefulWidget {
   final TaskTemplate template;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
-
+  final bool isCreated;
+  final bool showQuickSettings;
+  final List<String> assignedUsers;
+  final int rewardPoints;
+  final List<String>? availableUsers;
+  final ValueChanged<List<String>>? onAssignedUsersChanged;
+  final ValueChanged<int>? onRewardPointsChanged;
+  final ValueChanged<RecurrencePattern>? onRecurrenceChanged;
 
   const TaskTemplateItem({
     super.key,
     required this.template,
     this.onEdit,
     this.onDelete,
+    this.isCreated = false,
+    this.showQuickSettings = false,
+    this.assignedUsers = const [],
+    this.rewardPoints = 1,
+    this.availableUsers,
+    this.onAssignedUsersChanged,
+    this.onRewardPointsChanged,
+    this.onRecurrenceChanged,
   });
 
-  Text _formateTaskTitle(String title, BuildContext context) {
-    final theme = Theme.of(context);
-    return Text(
-      title,
-      style: theme.textTheme.taskCardTitle,
+  @override
+  State<TaskTemplateItem> createState() => _TaskTemplateItemState();
+}
+
+class _TaskTemplateItemState extends State<TaskTemplateItem> {
+  late TextEditingController _rewardController;
+  bool _isRecurrenceExpanded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _rewardController = TextEditingController(
+      text: widget.rewardPoints.toString(),
     );
+    _rewardController.addListener(_onRewardChanged);
   }
 
-  Widget _formateRecurrence(RecurrencePattern pattern, BuildContext context) {
-    final loc = AppLocalizations.of(context)!;
-    switch (pattern.type) {
-      case RecurrencePatternType.once:
-        var p = pattern as OncePattern;
-        return Wrap(
-          spacing: 4,
-          children: [
-            Text(loc.rpOnce),
-            _formatDateTimeWidget(p.startDateTime),
-          ],
-        );
-      case RecurrencePatternType.hourly:
-        var p = pattern as HourlyPattern;
-        return Wrap(
-          spacing: 4,
-          children: [
-            Text(loc.rpHourly),
-            ..._formateMinuteList(p.minutes),
-          ],
-        );
-      case RecurrencePatternType.daily:
-        var p = pattern as DailyPattern;
-        return Wrap(
-          spacing: 4,
-          children: [
-            Text(loc.rpDaily),
-            ..._formateTimeOfDayListWidget(p.times, context),
-          ],
-        );
-      case RecurrencePatternType.weekly:
-        var p = pattern as WeeklyPattern;
-        return Wrap(
-          spacing: 4,
-          children: [
-            Text(loc.rpWeekly),
-            ..._formateDaysOfWeekWidget(p.weekdays..sort(), context),
-            ..._formateTimeOfDayListWidget(p.times, context)],
-        );
-      case RecurrencePatternType.monthly:
-        var p = pattern as MonthlyPattern;
-        return Wrap(
-          spacing: 4,
-          children: [
-            Text(loc.rpMonthly),
-            ..._formateDaysOfMonth(p.daysOfMonth, context),
-            ..._formateTimeOfDayListWidget(p.times, context)],
-        );
-      default:
-        return Text( "${loc.rpDaily} ${_formatDateTime(pattern.startDateTime)}");
+  @override
+  void didUpdateWidget(TaskTemplateItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.rewardPoints != oldWidget.rewardPoints) {
+      final current = int.tryParse(_rewardController.text);
+      if (current != widget.rewardPoints) {
+        _rewardController.text = widget.rewardPoints.toString();
+      }
     }
   }
 
-
-  String _formateTimeOfDay(shared.TimeOfDay time) {
-    final h = time.hour.toString().padLeft(2, '0');
-    final m = time.minute.toString().padLeft(2, '0');
-    return '$h:$m';
+  @override
+  void dispose() {
+    _rewardController.removeListener(_onRewardChanged);
+    _rewardController.dispose();
+    super.dispose();
   }
 
-  List<Widget> _formateMinuteList(List<int> minutes) {
-    return minutes.map((e) => _buildChip(':${e.toString().padLeft(2,'0')}')).toList();
+  void _onRewardChanged() {
+    final value = int.tryParse(_rewardController.text);
+    if (value != null && value != widget.rewardPoints) {
+      widget.onRewardPointsChanged?.call(value);
+    }
   }
 
+  Widget _formateTaskTitle(String title, BuildContext context) {
+    return Text(
+      title,
+      style: Theme.of(
+        context,
+      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+    );
+  }
 
-
-  List<Widget> _formateDaysOfWeekWidget(List<int> days, BuildContext context) {
+  Widget _formateRecurrence(
+    RecurrencePattern? recurrence,
+    BuildContext context,
+  ) {
+    if (recurrence == null) return const SizedBox.shrink();
     final loc = AppLocalizations.of(context)!;
-    return days.map((e) {
-      if (e == shared.DayOfWeek.sunday.value) {
-        return _buildChip(loc.rpSunday, isTime: false);
-      } else if (e == shared.DayOfWeek.monday.value) {
-        return _buildChip(loc.rpMonday, isTime: false);
-      } else if (e == shared.DayOfWeek.tuesday.value) {
-        return _buildChip(loc.rpTuesday, isTime: false);
-      } else if (e == shared.DayOfWeek.wednesday.value) {
-        return _buildChip(loc.rpWednesday, isTime: false);
-      } else if (e == shared.DayOfWeek.thursday.value) {
-        return _buildChip(loc.rpThursday, isTime: false);
-      } else if (e == shared.DayOfWeek.friday.value) {
-        return _buildChip(loc.rpFriday, isTime: false);
-      } else if (e == shared.DayOfWeek.saturday.value) {
-        return _buildChip(loc.rpSaturday);
-      }
-      throw Exception('Invalid day of week: $e');
-    }).toList();
+    String text = '';
+
+    if (recurrence is OncePattern) {
+      text =
+          '${loc.rpOnce} ${recurrence.dueDateTime != null ? _formatDateTime(recurrence.dueDateTime!) : ""}';
+    } else if (recurrence is HourlyPattern) {
+      text = loc.rpHourly;
+    } else if (recurrence is DailyPattern) {
+      text = loc.rpDaily;
+    } else if (recurrence is WeeklyPattern) {
+      text = loc.rpWeekly;
+    } else if (recurrence is MonthlyPattern) {
+      text = loc.rpMonthly;
+    } else if (recurrence is YearlyPattern) {
+      text = loc.rpYearly;
+    } else {
+      text = recurrence.type.toString();
+    }
+
+    // Only allow expansion if we have a callback to change it
+    final canEdit = widget.onRecurrenceChanged != null;
+
+    final content = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          const Icon(Icons.repeat, size: 14, color: Colors.black87),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Text(
+              text,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.black87),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (canEdit)
+            Icon(
+              _isRecurrenceExpanded ? Icons.expand_less : Icons.expand_more,
+              size: 16,
+              color: Colors.grey,
+            ),
+        ],
+      ),
+    );
+
+    if (!canEdit) return content;
+
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _isRecurrenceExpanded = !_isRecurrenceExpanded;
+        });
+      },
+      child: content,
+    );
   }
 
-  List<Widget> _formateDaysOfMonth(List<int> days, BuildContext context) {
-    final loc = AppLocalizations.of(context)!;
-    return days.map((e) {
-      if (e < 32) {
-        return _buildChip('${e.toString().padLeft(2, '0')}', isTime: false);
-      } else if (e == 32) {
-        return _buildChip(loc.rpLastDayOfMonth, isTime: false);
-      } 
-      throw Exception('Invalid day of month: $e');
-    }).toList();
+  Widget _formateAssignedUsers(List<String> users, BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    return Text('${localizations.assigned}: ${users.join(', ')}');
   }
-
-  List<Widget> _formateTimeOfDayListWidget(
-      List<shared.TimeOfDay> timeList, BuildContext context) {
-    return timeList
-        .map((e) => _buildChip(
-              _formateTimeOfDay(e),
-            ))
-        .toList();
-  }
-
 
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
+    final auth = context.read<AuthProvider>();
 
-    var nextInstance = template.recurrence.next();
     return buildCard(
       context,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      //elevation: 2,
       child: Padding(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(12),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          spacing: 8,
           children: [
-            // Row 1: title + edit/delete
             Row(
               children: [
                 Expanded(
-                  child: _formateTaskTitle(
-                    template.title,
-                    context,),
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: _formateTaskTitle(
+                          widget.template.title,
+                          context,
+                        ),
+                      ),
+                      if (widget.isCreated) ...[
+                        const SizedBox(width: 8),
+                        const Icon(
+                          Icons.check_circle,
+                          color: Colors.green,
+                          size: 20,
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-                if (onEdit != null) IconButton(
-                  icon: const Icon(Icons.edit),
-                  tooltip: loc.edit,
-                  onPressed: onEdit,
+                IconButton(
+                  icon: const Icon(Icons.edit, size: 20),
+                  onPressed: widget.onEdit,
+                  tooltip: localizations.edit,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                 ),
-                if (onDelete != null) IconButton(
-                  icon: const Icon(Icons.delete),
-                  tooltip: loc.delete,
-                  onPressed: onDelete,
+                const SizedBox(width: 16),
+                IconButton(
+                  icon: const Icon(
+                    Icons.delete,
+                    size: 20,
+                    color: Color.fromARGB(255, 141, 12, 3),
+                  ),
+                  onPressed: widget.onDelete,
+                  tooltip: localizations.delete,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                 ),
               ],
             ),
-            if (template.description != null)
-              Text('${template.description}'),
-            _formateRecurrence(template.recurrence, context),
-            // Row 3: next due datetime
-            if(nextInstance != null && template.recurrence.type != RecurrencePatternType.once) 
+            const SizedBox(height: 8),
+            if (widget.template.description != null)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(widget.template.description!),
+              ),
+
+            if (auth.isParent && !widget.showQuickSettings)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: _formateAssignedUsers(
+                  widget.template.assignedUsers,
+                  context,
+                ),
+              ),
+
+            // Quick settings (inline editors)
+            if (widget.showQuickSettings) ...[
+              const SizedBox(height: 12),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(loc.taskUpcomingInstance),
-                  const SizedBox(width: 8),
-                  _formatDateTimeWidget(nextInstance),
+                  // Assigned user selector
+                  if (widget.availableUsers != null &&
+                      widget.availableUsers!.isNotEmpty) ...[
+                    Expanded(
+                      flex: 3,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            localizations.taskAssignedUsers,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          const SizedBox(height: 4),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            children:
+                                widget.availableUsers!.map((user) {
+                                  final isSelected = widget.assignedUsers
+                                      .contains(user);
+                                  return FilterChip(
+                                    label: Text(user),
+                                    selected: isSelected,
+                                    onSelected: (selected) {
+                                      final updatedList = List<String>.from(
+                                        widget.assignedUsers,
+                                      );
+                                      if (selected) {
+                                        updatedList.add(user);
+                                      } else {
+                                        updatedList.remove(user);
+                                      }
+                                      widget.onAssignedUsersChanged?.call(
+                                        updatedList,
+                                      );
+                                    },
+                                    materialTapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                    visualDensity: VisualDensity.compact,
+                                  );
+                                }).toList(),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+
+                  // Reward points input
+                  if (widget.onRewardPointsChanged != null)
+                    Expanded(
+                      flex: 2,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            localizations.taskRewardPoints,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          const SizedBox(height: 4),
+                          Transform.scale(
+                            scale: 0.8,
+                            child: NumberField(
+                              controller: _rewardController,
+                              min: 0,
+                              max: 1000,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
+              ),
+              const SizedBox(height: 8),
+            ],
+
+            _formateRecurrence(widget.template.recurrence, context),
+            if (widget.onRecurrenceChanged != null && _isRecurrenceExpanded)
+              Container(
+                margin: const EdgeInsets.only(top: 8),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerHighest.withAlpha(50),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.withAlpha(50)),
+                ),
+                child: RecurrencePatternPicker(
+                  initialPattern: widget.template.recurrence,
+                  onChanged: (pattern) {
+                    widget.onRecurrenceChanged?.call(pattern);
+                  },
+                  isSmallScreen: true,
+                  locale: context.watch<AppConfig>().locale,
+                ),
               ),
           ],
         ),
@@ -260,22 +360,17 @@ class TaskTemplateItem extends StatelessWidget {
   }
 }
 
-
 class TaskInstanceItem extends StatefulWidget {
   final Task instance;
   final VoidCallback? onUpdated;
 
-  const TaskInstanceItem({
-    super.key,
-    required this.instance,
-    this.onUpdated
-  });
+  const TaskInstanceItem({super.key, required this.instance, this.onUpdated});
 
   @override
   State<TaskInstanceItem> createState() => _TaskInstanceItemState();
 }
-class _TaskInstanceItemState extends PageBaseState<TaskInstanceItem> {
 
+class _TaskInstanceItemState extends PageBaseState<TaskInstanceItem> {
   late Task instance;
 
   @override
@@ -314,22 +409,21 @@ class _TaskInstanceItemState extends PageBaseState<TaskInstanceItem> {
             iconSize: 14,
             fontSize: 12,
             color: Colors.amber[800],
-          )
+          ),
         ],
       );
     }
     if (instance.cancelled) {
       statusText = AppLocalizations.of(context)!.taskStatusCancelled;
-    } 
-    else if (instance.startTime.isAfter(DateTime.now())){
+    } else if (instance.startTime.isAfter(DateTime.now())) {
       statusText = localizations.taskStatusNotStarted;
-    }
-    else if (instance.isCompleted) {
-      if (instance.isGraded) { // child 
+    } else if (instance.isCompleted) {
+      if (instance.isGraded) {
+        // child
         statusText = localizations.taskStatusCompleted;
         color = Colors.green.withAlpha(50);
-      }
-      else { // parent
+      } else {
+        // parent
         statusText = localizations.taskStatusAwaitGrading;
       }
     } else if (instance.isOverdue) {
@@ -342,24 +436,26 @@ class _TaskInstanceItemState extends PageBaseState<TaskInstanceItem> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.black38,),
+        border: Border.all(color: Colors.black38),
         borderRadius: BorderRadius.circular(8),
-        
+
         color: color,
       ),
-      child: Text(statusText, 
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: Colors.black54,
-        ),
+      child: Text(
+        statusText,
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(color: Colors.black54),
       ),
     );
-  
   }
 
   Widget buildTaskCard() {
     return GestureDetector(
       onTap: () async {
-        final changed = await GoRouter.of(context).push<bool>('/tasks/${instance.id}/detail', extra: instance);
+        final changed = await GoRouter.of(
+          context,
+        ).push<bool>('/tasks/${instance.id}/detail', extra: instance);
         if (changed == true && widget.onUpdated != null) {
           widget.onUpdated!();
         }
@@ -374,14 +470,13 @@ class _TaskInstanceItemState extends PageBaseState<TaskInstanceItem> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    instance.title,
-                    style: theme.textTheme.taskCardTitle,
-                  ),
+                  Text(instance.title, style: theme.textTheme.taskCardTitle),
                   const SizedBox(height: 8),
-                  if (instance.description != null) Text(
-                    '${localizations.taskDescription}: ${instance.description!}',
-                    style: theme.textTheme.taskCardBody),
+                  if (instance.description != null)
+                    Text(
+                      '${localizations.taskDescription}: ${instance.description!}',
+                      style: theme.textTheme.taskCardBody,
+                    ),
                   if (instance.description != null) const SizedBox(height: 8),
                   Text(
                     '${localizations.taskStartAt}: ${formatDateTime(instance.startTime)}',
@@ -397,10 +492,8 @@ class _TaskInstanceItemState extends PageBaseState<TaskInstanceItem> {
             const SizedBox(width: 16),
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildTaskStatus(context)
-              ],
-            )
+              children: [_buildTaskStatus(context)],
+            ),
           ],
         ),
       ),
@@ -410,8 +503,8 @@ class _TaskInstanceItemState extends PageBaseState<TaskInstanceItem> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 12.0),
-        child: buildTaskCard(),
+      padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 12.0),
+      child: buildTaskCard(),
     );
   }
 }

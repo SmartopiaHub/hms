@@ -1144,4 +1144,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noItemsAvailable => 'No items available';
+
+  @override
+  String get taskRewardPoints => 'Reward Points';
+
+  @override
+  String get taskReviewConfirmCreate => 'Confirm & Create All';
+
+  @override
+  String get taskReviewGlobalSettings => 'Global Settings (Apply to All Tasks)';
 }

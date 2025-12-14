@@ -267,6 +267,7 @@ GoRouter createRouter(AuthProvider authProvider) {
                 return CreateOrEditTaskPage(
                   returnOnSubmit: extra['returnOnSubmit'] ?? false,
                   taskTemplate: extra['taskTemplate'],
+                  fromReview: extra['fromReview'] ?? false,
                 );
               }
               return CreateOrEditTaskPage();

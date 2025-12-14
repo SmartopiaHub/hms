@@ -11,20 +11,16 @@ import 'package:smartopia_hms_shared/shared.dart';
 
 part 'database.g.dart';
 
-
 /// A table to store user information
 class Users extends Table {
-
   /// The unique identifier for the user
   IntColumn get id => integer().autoIncrement()();
-  
+
   /// A unique username column with a length between 3 and 32 characters.
-  TextColumn get username =>
-      text().withLength(min: 3, max: 32)();
+  TextColumn get username => text().withLength(min: 3, max: 32)();
 
   /// Nickname column with a length between 3 and 32 characters.
-  TextColumn get nickname =>
-      text().withLength(min: 1, max: 32).nullable()();
+  TextColumn get nickname => text().withLength(min: 1, max: 32).nullable()();
 
   /// A password column with a suitable length (storing a hashed value).
   TextColumn get password => text().withLength(min: 8, max: 128)();
@@ -33,7 +29,8 @@ class Users extends Table {
   BoolColumn get isParent => boolean().withDefault(const Constant(true))();
 
   /// A column to indicate if the user is allowed to manage their own homework.
-  BoolColumn get allowSelfHomeworkManagement => boolean().withDefault(const Constant(false))();
+  BoolColumn get allowSelfHomeworkManagement =>
+      boolean().withDefault(const Constant(false))();
 
   /// User's notification settings
   TextColumn get notificationSettings =>
@@ -56,48 +53,39 @@ class Users extends Table {
 
 /// A table to store task templates
 class TaskTemplates extends Table {
-
   /// The unique identifier for the task template
   IntColumn get id => integer().autoIncrement()();
-  
+
   /// The name of the task
-  TextColumn get title =>
-      text().withLength(min: 1, max: 64)();
-  
+  TextColumn get title => text().withLength(min: 1, max: 256)();
+
   /// The username of the creator
-  TextColumn get creator =>
-      text().withLength(min: 1, max: 32)();
+  TextColumn get creator => text().withLength(min: 1, max: 32)();
 
   /// The users associated with the task
-  TextColumn get assignedUsers =>
-      text().map(stringListConverter)();
+  TextColumn get assignedUsers => text().map(stringListConverter)();
 
   /// The tags associated with the task
-  TextColumn get tags =>
-      text().map(stringListConverter).nullable()();
+  TextColumn get tags => text().map(stringListConverter).nullable()();
 
   /// The priority of the task, represented as an integer, the higher the number, the higher the priority
-  IntColumn get priority =>
-      integer().withDefault(const Constant(0))();
+  IntColumn get priority => integer().withDefault(const Constant(0))();
 
   /// the number of minutes before the task is due when the user should be reminded
-  IntColumn get remind => 
-      integer().withDefault(const Constant(0))();
+  IntColumn get remind => integer().withDefault(const Constant(0))();
 
   /// The description of the task
-  TextColumn get description =>
-      text().nullable()();
+  TextColumn get description => text().nullable()();
 
   /// How often the task should be repeated
-  TextColumn get recurrence =>
-      text().map(recurrencePatternConverter)();
+  TextColumn get recurrence => text().map(recurrencePatternConverter)();
 
   /// Reward information (max points, description, etc.)
-  TextColumn get rewards => text().map(const RewardInfoConverter()).nullable()();
-  
+  TextColumn get rewards =>
+      text().map(const RewardInfoConverter()).nullable()();
+
   /// Penalty for not completing the task
-  TextColumn get penalty =>
-      text().nullable()();
+  TextColumn get penalty => text().nullable()();
 
   /// Requires an attachment to be submitted for this task or not
   BoolColumn get attachmentRequired =>
@@ -106,11 +94,9 @@ class TaskTemplates extends Table {
   /// Requires the user to submit the task or not
   BoolColumn get submissionRequired =>
       boolean().withDefault(const Constant(true))();
-  
+
   /// The time when the task was created
   DateTimeColumn get creationTime => dateTime()();
-
-
 
   /// The expected completion time duration in minutes for each of this task
   IntColumn get expectedCompletionTimeInMinutes =>
@@ -123,50 +109,43 @@ class TaskTemplates extends Table {
   @override
   List<Set<Column>> get uniqueKeys => [
         {id},
-  ];
+      ];
 }
 
 /// A table to store task instances
 class Tasks extends Table {
-
   /// The unique identifier for the task instance
   IntColumn get id => integer().autoIncrement()();
-  
+
   /// The unique identifier for the task template
-  IntColumn get templateId =>
-      integer()();
+  IntColumn get templateId => integer()();
 
   /// The title of the task instance, derived from the template
-  TextColumn get title =>
-      text().withLength(min: 1, max: 64)();
+  TextColumn get title => text().withLength(min: 1, max: 256)();
 
   /// The description of the task instance, derived from the template
-  TextColumn get description =>
-      text().nullable()();
+  TextColumn get description => text().nullable()();
 
   /// The tags associated with the task
-  TextColumn get tags =>
-      text().map(stringListConverter).nullable()();
+  TextColumn get tags => text().map(stringListConverter).nullable()();
 
   /// the number of minutes before the task is due when the user should be reminded
-  IntColumn get remind => 
-      integer().withDefault(const Constant(0))();
+  IntColumn get remind => integer().withDefault(const Constant(0))();
 
   /// The users associated with the task
-  TextColumn get assignedUsers =>
-      text().map(stringListConverter)();
+  TextColumn get assignedUsers => text().map(stringListConverter)();
 
   /// Reward information (max points, description, etc.)
-  TextColumn get rewards => text().map(const RewardInfoConverter()).nullable()();
-  
+  TextColumn get rewards =>
+      text().map(const RewardInfoConverter()).nullable()();
+
   /// Penalty for not completing the task
-  TextColumn get penalty =>
-      text().nullable()();
+  TextColumn get penalty => text().nullable()();
 
   /// The start time of the task instance
   DateTimeColumn get startTime => dateTime()();
 
-  /// The due time of the task instance, 
+  /// The due time of the task instance,
   DateTimeColumn get dueTime => dateTime()();
 
   /// The expected completion time duration in minutes for each of this task
@@ -182,20 +161,16 @@ class Tasks extends Table {
       text().map(notificationHistoryConverter).nullable()();
 
   /// The submitted files for the task instance
-  TextColumn get submittedFiles =>
-      text().map(stringListConverter).nullable()();
+  TextColumn get submittedFiles => text().map(stringListConverter).nullable()();
 
   /// The time when the task instance was completed
   DateTimeColumn get completionTime => dateTime().nullable()();
-
-
 
   /// The time when the task instance was evaluated
   DateTimeColumn get evaluationTime => dateTime().nullable()();
 
   /// The username of evaluator of the task instance
-  TextColumn get evaluator =>
-      text().withLength(min: 1, max: 32).nullable()();
+  TextColumn get evaluator => text().withLength(min: 1, max: 32).nullable()();
 
   /// Indicates if the task instance requires an attachment to be submitted
   BoolColumn get attachmentRequired =>
@@ -206,8 +181,7 @@ class Tasks extends Table {
       boolean().withDefault(const Constant(true))();
 
   /// Requires the user to submit the task or not
-  BoolColumn get cancelled =>
-      boolean().withDefault(const Constant(false))();
+  BoolColumn get cancelled => boolean().withDefault(const Constant(false))();
 
   @override
   List<Set<Column>> get uniqueKeys => [
@@ -221,7 +195,7 @@ class ShopItems extends Table {
   IntColumn get id => integer().autoIncrement()();
 
   /// The title of the item
-  TextColumn get title => text().withLength(min: 1, max: 64)();
+  TextColumn get title => text().withLength(min: 1, max: 256)();
 
   /// The description of the item
   TextColumn get description => text().nullable()();
@@ -268,7 +242,7 @@ class AppDatabase extends _$AppDatabase {
 
   // Specify the database schema version
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration {
@@ -279,33 +253,39 @@ class AppDatabase extends _$AppDatabase {
       onUpgrade: (Migrator m, int from, int to) async {
         if (from < 2) {
           // we added the allowSelfHomeworkManagement column in the users table
-          await m.addColumn(users, users.allowSelfHomeworkManagement as GeneratedColumn<Object>);
+          await m.addColumn(users,
+              users.allowSelfHomeworkManagement as GeneratedColumn<Object>);
         }
         if (from < 3) {
           // we added the notificationSettings column in the users table
-          await m.addColumn(users, users.notificationSettings as GeneratedColumn<Object>);
+          await m.addColumn(
+              users, users.notificationSettings as GeneratedColumn<Object>);
         }
         if (from < 4) {
           // we added the maxPoints column in the taskTemplates table
           // await m.addColumn(taskTemplates, taskTemplates.maxPoints as GeneratedColumn<Object>);
           // we added the pointSystemId column in the users table
-          await m.addColumn(users, users.pointSystemId as GeneratedColumn<Object>);
+          await m.addColumn(
+              users, users.pointSystemId as GeneratedColumn<Object>);
           // we added the maxPoints column in the tasks table
           // await m.addColumn(tasks, tasks.maxPoints as GeneratedColumn<Object>);
         }
         if (from < 5) {
           // we added the rewards column in the taskTemplates table
-          await m.addColumn(taskTemplates, taskTemplates.rewards as GeneratedColumn<Object>);
+          await m.addColumn(
+              taskTemplates, taskTemplates.rewards as GeneratedColumn<Object>);
           // we added the rewards column in the tasks table
           await m.addColumn(tasks, tasks.rewards as GeneratedColumn<Object>);
         }
         if (from < 6) {
           // we added the totalPoints column in the users table
-          await m.addColumn(users, users.totalPoints as GeneratedColumn<Object>);
+          await m.addColumn(
+              users, users.totalPoints as GeneratedColumn<Object>);
         }
         if (from < 7) {
           // we added the redeemedPoints column in the users table
-          await m.addColumn(users, users.redeemedPoints as GeneratedColumn<Object>);
+          await m.addColumn(
+              users, users.redeemedPoints as GeneratedColumn<Object>);
           // we added the ShopItems table
           await m.createTable(shopItems);
         }
@@ -328,15 +308,14 @@ class AppDatabase extends _$AppDatabase {
   }
 }
 
-AppDatabase _appDatabase =AppDatabase();
+AppDatabase _appDatabase = AppDatabase();
 
 /// Function to get the database instance
 AppDatabase get database => _appDatabase;
 
-
 extension TaskTemplateExtension on TaskTemplate {
   /// Returns the due duration for the task template.
-  Duration get dueDuration{
+  Duration get dueDuration {
     if (recurrence.duration != null) {
       return recurrence.duration!;
     } else {
@@ -388,10 +367,8 @@ enum TaskStatus {
 }
 
 extension TaskExtension on Task {
-
   /// Return the status of the task based on its properties
   TaskStatus get status {
-
     // Check if the task is cancelled
     if (cancelled) {
       return TaskStatus.cancelled;
@@ -428,7 +405,6 @@ extension TaskExtension on Task {
   bool get isGraded {
     return rewards?.pointsAwarded != null;
   }
-
 }
 
 class RewardInfoConverter extends TypeConverter<RewardInfo, String> {
