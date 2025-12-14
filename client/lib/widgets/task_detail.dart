@@ -7,6 +7,7 @@ import '../config.dart';
 import '../notification.dart';
 import '../pages/base.dart';
 import '../themes/theme.dart';
+import '../utility.dart';
 import 'buttons.dart';
 import 'card.dart';
 import 'package:flutter/foundation.dart';
@@ -46,7 +47,6 @@ class TaskDetail extends StatefulWidget {
   final bool includeEvaluationTime;
   final bool includeAssignedUsers;
 
-
   const TaskDetail({
     super.key,
     required this.task,
@@ -68,7 +68,6 @@ class TaskDetail extends StatefulWidget {
     this.includeEvaluator = true,
     this.includeEvaluationTime = true,
     this.includeAssignedUsers = true,
-    
   });
 
   @override
@@ -76,7 +75,6 @@ class TaskDetail extends StatefulWidget {
 }
 
 class _TaskDetailState extends PageBaseState<TaskDetail> {
-
   final Map<String, String> _downloadedFiles = {};
 
   Task get task => widget.task;
@@ -84,20 +82,17 @@ class _TaskDetailState extends PageBaseState<TaskDetail> {
   @override
   void initState() {
     super.initState();
-      final files = task.submittedFiles;
-      if (files != null && files.isNotEmpty) {
-        WidgetsBinding.instance.addPostFrameCallback((_) async {
-          await _downloadFiles(files);
-        });
-      }
+    final files = task.submittedFiles;
+    if (files != null && files.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await _downloadFiles(files);
+      });
+    }
   }
 
   Future<void> _downloadFiles(List<String> filenames) async {
     for (var filename in filenames) {
-      final path = await apiService.downloadFile(
-        widget.task.id,
-        filename,
-      );
+      final path = await apiService.downloadFile(widget.task.id, filename);
       if (path != null) {
         setState(() {
           _downloadedFiles[filename] = path;
@@ -112,102 +107,128 @@ class _TaskDetailState extends PageBaseState<TaskDetail> {
     final canGoBack = GoRouter.of(context).canPop();
     final loc = AppLocalizations.of(context)!;
     final actions = <Widget>[];
-      if (widget.onEdit != null && !task.cancelled) {
-        actions.add(buildElevatedButton(
+    if (widget.onEdit != null && !task.cancelled) {
+      actions.add(
+        buildElevatedButton(
           context: context,
           onPressed: widget.onEdit,
           icon: Icons.edit,
           label: loc.edit,
-        ));
-      }
-      if (widget.onDelete != null) {
-        actions.add(buildElevatedButton(
+        ),
+      );
+    }
+    if (widget.onDelete != null) {
+      actions.add(
+        buildElevatedButton(
           context: context,
           onPressed: widget.onDelete,
           icon: Icons.delete,
           label: loc.delete,
-        ));
-      }
-      if (widget.onCancel != null && !task.cancelled) {
-        actions.add(buildElevatedButton(
+        ),
+      );
+    }
+    if (widget.onCancel != null && !task.cancelled) {
+      actions.add(
+        buildElevatedButton(
           context: context,
           onPressed: widget.onCancel,
           icon: Icons.cancel,
           label: loc.taskCancelTitle,
-        ));
-      }
-      if (widget.onGrade != null) {
-        actions.add(buildElevatedButton(
+        ),
+      );
+    }
+    if (widget.onGrade != null) {
+      actions.add(
+        buildElevatedButton(
           context: context,
           onPressed: widget.onGrade,
           icon: Icons.grade,
           label: loc.grade,
-        ));
-      }
-      if (widget.onUnsubmit != null) {
-        actions.add(buildElevatedButton(
+        ),
+      );
+    }
+    if (widget.onUnsubmit != null) {
+      actions.add(
+        buildElevatedButton(
           context: context,
           onPressed: widget.onUnsubmit,
           icon: Icons.undo,
           label: loc.unsubmit,
-        ));
-      }
-    
-      // child user
-      if (widget.onSubmit != null) {
-        actions.add(buildElevatedButton(
+        ),
+      );
+    }
+
+    // child user
+    if (widget.onSubmit != null) {
+      actions.add(
+        buildElevatedButton(
           context: context,
           onPressed: widget.onSubmit,
           icon: Icons.upload_file,
           label: loc.submit,
-        ));
-      }
+        ),
+      );
+    }
 
     if (actions.isEmpty && !canGoBack) {
       return const SizedBox.shrink(); // No actions to display
     }
 
-    final goBackButton = canGoBack && widget.onGoBack != null ?
-        buildGoBackButton(context,
-            onPressed: () => widget.onGoBack!= null ? widget.onGoBack!() : GoRouter.of(context).pop(),
-          )
-        : null;
+    final goBackButton =
+        canGoBack && widget.onGoBack != null
+            ? buildGoBackButton(
+              context,
+              onPressed:
+                  () =>
+                      widget.onGoBack != null
+                          ? widget.onGoBack!()
+                          : GoRouter.of(context).pop(),
+            )
+            : null;
 
     // responsive button layout
     final isNarrow = MediaQuery.of(context).size.width < 550;
-    final buttonArea = isNarrow
-        ? Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children:[ ...actions
-                .map((b) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: b,
-                    )),
+    final buttonArea =
+        isNarrow
+            ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ...actions.map(
+                  (b) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: b,
+                  ),
+                ),
                 if (goBackButton != null) goBackButton,
-            ],
-          )
-        : canGoBack ? Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            spacing: 8,
-            children: [
-              if (goBackButton != null) goBackButton,
-              if (actions.isNotEmpty) Expanded(child: SizedBox(width: 10,),),
-              if (actions.isNotEmpty) Row(
-                spacing: 8,
-                children: actions,)
-              
-            ],
-          ) : Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            spacing: 8,
-            children: actions,
-          );
-    return Padding(padding: const EdgeInsets.symmetric(horizontal: 12),
+              ],
+            )
+            : canGoBack
+            ? Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              spacing: 8,
+              children: [
+                if (goBackButton != null) goBackButton,
+                if (actions.isNotEmpty) Expanded(child: SizedBox(width: 10)),
+                if (actions.isNotEmpty) Row(spacing: 8, children: actions),
+              ],
+            )
+            : Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              spacing: 8,
+              children: actions,
+            );
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       child: buttonArea,
     );
   }
 
-  Widget _buildCard(BuildContext context, String label, {String? value, Widget? valueWidget}) {
+  Widget _buildCard(
+    BuildContext context,
+    String label, {
+    String? value,
+    Widget? valueWidget,
+  }) {
     final theme = Theme.of(context);
     value ??= '';
     if (value.isEmpty) {
@@ -217,47 +238,40 @@ class _TaskDetailState extends PageBaseState<TaskDetail> {
     }
     return buildCard(
       context,
-        padding: const EdgeInsets.all(16.0),
-      child: 
-        Row(
+      padding: const EdgeInsets.all(16.0),
+      child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(label, style: theme.textTheme.taskCardBody),
-            valueWidget ?? Text(value, style: theme.textTheme.taskCardBody),
-        ],)
+        children: [
+          Text(label, style: theme.textTheme.taskCardBody),
+          valueWidget ?? Text(value, style: theme.textTheme.taskCardBody),
+        ],
+      ),
     );
   }
 
-  String _formatDateTime(DateTime dt) {
-    final y = dt.year;
-    final m = dt.month.toString().padLeft(2, '0');
-    final d = dt.day.toString().padLeft(2, '0');
-    final h = dt.hour.toString().padLeft(2, '0');
-    final min = dt.minute.toString().padLeft(2, '0');
-    return '$y-$m-$d $h:$min';
-}
-
-
   Widget _buildSubmittedFile(BuildContext context, String file) {
     return InkWell(
-      onTap: !_downloadedFiles.containsKey(file) ? null : () async{
-        final url = _downloadedFiles[file];
-        if (kIsWeb) {
-          
-          final anchor = html.AnchorElement(href: url.toString())
-            ..setAttribute('download', file)
-            ..style.display = 'none';
-          html.document.body!.append(anchor);
-          anchor.click();
-          anchor.remove();
-        } else {
-          showErrorNotification(
-            'File download is not supported on this platform.',
-            context: context,
-          );
+      onTap:
+          !_downloadedFiles.containsKey(file)
+              ? null
+              : () async {
+                final url = _downloadedFiles[file];
+                if (kIsWeb) {
+                  final anchor =
+                      html.AnchorElement(href: url.toString())
+                        ..setAttribute('download', file)
+                        ..style.display = 'none';
+                  html.document.body!.append(anchor);
+                  anchor.click();
+                  anchor.remove();
+                } else {
+                  showErrorNotification(
+                    'File download is not supported on this platform.',
+                    context: context,
+                  );
 
-          // mobile: open in external browser which will download or display
-          /*if (await canLaunchUrl(url)) {
+                  // mobile: open in external browser which will download or display
+                  /*if (await canLaunchUrl(url)) {
             await launchUrl(
               url,
               mode: LaunchMode.externalApplication,
@@ -267,8 +281,8 @@ class _TaskDetailState extends PageBaseState<TaskDetail> {
               SnackBar(content: Text('Cannot launch download URL')),
             );
           }*/
-        }
-      },
+                }
+              },
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         child: Row(
@@ -284,10 +298,12 @@ class _TaskDetailState extends PageBaseState<TaskDetail> {
               ),
             ),
             const SizedBox(width: 8),
-            _downloadedFiles.containsKey(file) ? Icon(Icons.download, size: 20) : CircularProgressIndicator()
+            _downloadedFiles.containsKey(file)
+                ? Icon(Icons.download, size: 20)
+                : CircularProgressIndicator(),
           ],
         ),
-      )
+      ),
     );
   }
 
@@ -297,119 +313,164 @@ class _TaskDetailState extends PageBaseState<TaskDetail> {
     final theme = Theme.of(context);
     final auth = context.read<AuthProvider>();
     final appConfig = context.read<AppConfig>();
-    
+
     return Align(
       alignment: Alignment.topCenter,
-      child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 550), 
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 550),
         child: SingleChildScrollView(
           child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisAlignment: MainAxisAlignment.start,
-          //padding: const EdgeInsets.symmetric(vertical: 12),
-          children: [
-            SizedBox(height: 18),
-            Center(
-              child: Text(
-                task.title,
-                style: theme.textTheme.taskCardTitle,
-                textAlign: TextAlign.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.start,
+            //padding: const EdgeInsets.symmetric(vertical: 12),
+            children: [
+              SizedBox(height: 18),
+              Center(
+                child: Text(
+                  task.title,
+                  style: theme.textTheme.taskCardTitle,
+                  textAlign: TextAlign.center,
+                ),
               ),
-            ),
-            SizedBox(height: 8),
-            if(task.description!=null && widget.includeDescription) Center(
-              child: Text(
-                task.description!,
-                style: theme.textTheme.taskCardBody,
-                textAlign: TextAlign.center,
-              ),
-            ),
-            SizedBox(height: 8),
-            _buildCard(
+              SizedBox(height: 8),
+              if (task.description != null && widget.includeDescription)
+                Center(
+                  child: Text(
+                    task.description!,
+                    style: theme.textTheme.taskCardBody,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              SizedBox(height: 8),
+              _buildCard(
                 context,
                 loc.taskAssignedTo,
-                value: task.assignedUsers.join(', ')),
-            if (widget.includeStartTime) SizedBox(height: 8),
-            if (widget.includeStartTime) _buildCard(
-                context,
-                loc.taskStartAt,
-                value: _formatDateTime(task.startTime)),
-            if (widget.includeDuetime) SizedBox(height: 8),
-            if (widget.includeDuetime) _buildCard(
-                context,
-                loc.taskDueAt,
-                value: _formatDateTime(task.dueTime)),
-            if (task.completionTime != null && widget.includeCompletionTime) SizedBox(height: 8),
-            if (task.completionTime != null && widget.includeCompletionTime)
-              _buildCard(context, loc.taskCompletedAt,
-                  value: _formatDateTime(task.completionTime!)),
-            if (task.rewards?.pointsAwarded != null)
-              SizedBox(height: 8),
-            if (task.rewards?.pointsAwarded != null)
-              _buildCard(context, loc.taskRating, 
-                  valueWidget:  Row(
+                value: task.assignedUsers.join(', '),
+              ),
+              if (widget.includeStartTime) SizedBox(height: 8),
+              if (widget.includeStartTime)
+                _buildCard(
+                  context,
+                  loc.taskStartAt,
+                  value: formatDateTime(task.startTime),
+                ),
+              if (widget.includeDuetime) SizedBox(height: 8),
+              if (widget.includeDuetime)
+                _buildCard(
+                  context,
+                  loc.taskDueAt,
+                  value: formatDateTime(task.dueTime),
+                ),
+              if (task.completionTime != null && widget.includeCompletionTime)
+                SizedBox(height: 8),
+              if (task.completionTime != null && widget.includeCompletionTime)
+                _buildCard(
+                  context,
+                  loc.taskCompletedAt,
+                  value: formatDateTime(task.completionTime!),
+                ),
+              if (task.rewards?.pointsAwarded != null) SizedBox(height: 8),
+              if (task.rewards?.pointsAwarded != null)
+                _buildCard(
+                  context,
+                  loc.taskRating,
+                  valueWidget: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       SizedBox(
                         width: 100,
                         child: StarRating(
-                            rating: (task.rewards!.maxPoints != null && task.rewards!.maxPoints! > 0)
-                                ? (task.rewards!.pointsAwarded! / task.rewards!.maxPoints! * 5)
-                                : 0.0,
-                            size: 20,
-                            color: Colors.amber,
-                          )
+                          rating:
+                              (task.rewards!.maxPoints != null &&
+                                      task.rewards!.maxPoints! > 0)
+                                  ? (task.rewards!.pointsAwarded! /
+                                      task.rewards!.maxPoints! *
+                                      5)
+                                  : 0.0,
+                          size: 20,
+                          color: Colors.amber,
+                        ),
                       ),
-                      
                     ],
                   ),
-                  
-              ),
-            if (widget.includeReward && task.rewards?.description != null) SizedBox(height: 8),
-            if (widget.includeReward && task.rewards?.description != null)
-              _buildCard(context, loc.taskReward, value: task.rewards!.description),
-            if (appConfig.pointSystemEnabled && widget.includeReward && task.rewards?.maxPoints != null) SizedBox(height: 8),
-            if (appConfig.pointSystemEnabled && widget.includeReward && task.rewards?.maxPoints != null)
-              _buildCard(
-                context, task.isGraded ? loc.taskReward : loc.taskMaxPoints, 
-                value: task.rewards!.maxPoints.toString(),
-                valueWidget: PointBadge(
-                  points: task.isGraded ? task.rewards!.pointsAwarded! : task.rewards!.maxPoints!,
-                  maxPoints: task.rewards!.maxPoints,
-                  pointSystemId: auth.pointSystemId,
-                  iconSize: 14,
-                  fontSize: 12,
-                  //color: Colors.amber[800],
                 ),
-              ),
-            if (widget.includePenalty && task.penalty != null) SizedBox(height: 8),
-            if (widget.includePenalty && task.penalty != null)
-              _buildCard(context, loc.taskPenalty, value: task.penalty),
-            if (task.evaluationTime != null && widget.includeEvaluationTime)
-              SizedBox(height: 8),
-            if (task.evaluationTime != null && widget.includeEvaluationTime)
-              _buildCard(context, loc.taskGradedAt,
-                  value: _formatDateTime(task.evaluationTime!)),
-            if (task.evaluator != null && widget.includeEvaluator) SizedBox(height: 8),
-            if (task.evaluator != null && widget.includeEvaluator)
-              _buildCard(context, loc.taskGradedBy, value: task.evaluator),
-            if (task.submittedFiles != null && task.submittedFiles!.isNotEmpty && widget.includeSubmittedFiles) SizedBox(height: 8),
-            if (task.submittedFiles != null && task.submittedFiles!.isNotEmpty && widget.includeSubmittedFiles)
-              buildCard(
-               context,
-               child: ExpansionTile(
-                    title: Text(loc.taskSubmittedFiles, style: theme.textTheme.taskCardBody),
-                    children: task.submittedFiles!
-                        .map((f) => 
-                          _buildSubmittedFile(context, f))
-                        .toList(),
-                  ),),
-            if (task.submittedFiles != null && task.submittedFiles!.isNotEmpty && widget.includeSubmittedFiles) SizedBox(height: 8),
-            const SizedBox(height: 12),
-            _buildButtons(context),
-            const SizedBox(height: 24),
-          ],
-        )
-      ),
+              if (widget.includeReward && task.rewards?.description != null)
+                SizedBox(height: 8),
+              if (widget.includeReward && task.rewards?.description != null)
+                _buildCard(
+                  context,
+                  loc.taskReward,
+                  value: task.rewards!.description,
+                ),
+              if (appConfig.pointSystemEnabled &&
+                  widget.includeReward &&
+                  task.rewards?.maxPoints != null)
+                SizedBox(height: 8),
+              if (appConfig.pointSystemEnabled &&
+                  widget.includeReward &&
+                  task.rewards?.maxPoints != null)
+                _buildCard(
+                  context,
+                  task.isGraded ? loc.taskReward : loc.taskMaxPoints,
+                  value: task.rewards!.maxPoints.toString(),
+                  valueWidget: PointBadge(
+                    points:
+                        task.isGraded
+                            ? task.rewards!.pointsAwarded!
+                            : task.rewards!.maxPoints!,
+                    maxPoints: task.rewards!.maxPoints,
+                    pointSystemId: auth.pointSystemId,
+                    iconSize: 14,
+                    fontSize: 12,
+                    //color: Colors.amber[800],
+                  ),
+                ),
+              if (widget.includePenalty && task.penalty != null)
+                SizedBox(height: 8),
+              if (widget.includePenalty && task.penalty != null)
+                _buildCard(context, loc.taskPenalty, value: task.penalty),
+              if (task.evaluationTime != null && widget.includeEvaluationTime)
+                SizedBox(height: 8),
+              if (task.evaluationTime != null && widget.includeEvaluationTime)
+                _buildCard(
+                  context,
+                  loc.taskGradedAt,
+                  value: formatDateTime(task.evaluationTime!),
+                ),
+              if (task.evaluator != null && widget.includeEvaluator)
+                SizedBox(height: 8),
+              if (task.evaluator != null && widget.includeEvaluator)
+                _buildCard(context, loc.taskGradedBy, value: task.evaluator),
+              if (task.submittedFiles != null &&
+                  task.submittedFiles!.isNotEmpty &&
+                  widget.includeSubmittedFiles)
+                SizedBox(height: 8),
+              if (task.submittedFiles != null &&
+                  task.submittedFiles!.isNotEmpty &&
+                  widget.includeSubmittedFiles)
+                buildCard(
+                  context,
+                  child: ExpansionTile(
+                    title: Text(
+                      loc.taskSubmittedFiles,
+                      style: theme.textTheme.taskCardBody,
+                    ),
+                    children:
+                        task.submittedFiles!
+                            .map((f) => _buildSubmittedFile(context, f))
+                            .toList(),
+                  ),
+                ),
+              if (task.submittedFiles != null &&
+                  task.submittedFiles!.isNotEmpty &&
+                  widget.includeSubmittedFiles)
+                SizedBox(height: 8),
+              const SizedBox(height: 12),
+              _buildButtons(context),
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
       ),
     );
   }

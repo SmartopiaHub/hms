@@ -3,12 +3,12 @@
 // See https://www.gnu.org/licenses/gpl-3.0.html for details.
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../base.dart';
 import 'package:provider/provider.dart';
 import '../../authenticator.dart';
 import '../../api.dart';
 import '../../widgets/point_badge.dart';
+import '../../utility.dart';
 
 class RedemptionHistoryPage extends StatefulWidget {
   const RedemptionHistoryPage({super.key});
@@ -36,7 +36,7 @@ class _RedemptionHistoryPageState extends PageBaseState<RedemptionHistoryPage> {
   Widget buildContent(BuildContext context) {
     final auth = context.read<AuthProvider>();
     final isParent = auth.isParent;
-    
+
     return FutureBuilder<List<Map<String, dynamic>>>(
       future: _historyFuture,
       builder: (context, snapshot) {
@@ -55,45 +55,51 @@ class _RedemptionHistoryPageState extends PageBaseState<RedemptionHistoryPage> {
           physics: const NeverScrollableScrollPhysics(),
           itemCount: items.length,
           itemBuilder: (context, index) {
-              final item = items[index];
-              final redeemedAt = DateTime.parse(item['redeemedAt']);
-              final imageUrl = item['itemImageUrl'] as String?;
-              
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: ListTile(
-                  leading: imageUrl != null && imageUrl.isNotEmpty
-                      ? Image.network(
+            final item = items[index];
+            final redeemedAt = DateTime.parse(item['redeemedAt']);
+            final imageUrl = item['itemImageUrl'] as String?;
+
+            return Card(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: ListTile(
+                leading:
+                    imageUrl != null && imageUrl.isNotEmpty
+                        ? Image.network(
                           imageUrl,
                           width: 50,
                           height: 50,
                           fit: BoxFit.cover,
-                          headers: auth.token != null ? {'Authorization': 'Bearer ${auth.token}'} : null,
-                          errorBuilder: (context, error, stackTrace) => const Icon(Icons.shopping_bag),
+                          headers:
+                              auth.token != null
+                                  ? {'Authorization': 'Bearer ${auth.token}'}
+                                  : null,
+                          errorBuilder:
+                              (context, error, stackTrace) =>
+                                  const Icon(Icons.shopping_bag),
                         )
-                      : const Icon(Icons.shopping_bag),
-                  title: Text(item['itemTitle'] ?? localizations.unknownItem),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(DateFormat.yMMMd().add_jm().format(redeemedAt)),
-                      if (isParent && item['userName'] != null)
-                        Text(
-                          item['userName'],
-                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                        ),
-                    ],
-                  ),
-                  trailing: PointBadge(
-                    points: item['cost'],
-                    pointSystemId: auth.pointSystemId,
-                    textColor: Colors.black87,
-                  ),
+                        : const Icon(Icons.shopping_bag),
+                title: Text(item['itemTitle'] ?? localizations.unknownItem),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(formatDateTime(redeemedAt)),
+                    if (isParent && item['userName'] != null)
+                      Text(
+                        item['userName'],
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                  ],
                 ),
-              );
-            },
-          );
-        },
-      );
+                trailing: PointBadge(
+                  points: item['cost'],
+                  pointSystemId: auth.pointSystemId,
+                  textColor: Colors.black87,
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 }

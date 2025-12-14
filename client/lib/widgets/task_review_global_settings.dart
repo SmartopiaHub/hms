@@ -16,16 +16,20 @@ class TaskReviewGlobalSettings extends StatefulWidget {
   final RecurrencePattern initialRecurrence;
   final List<String> availableUsers;
   final List<String> initialAssignedUsers;
+  final bool applyGlobalRecurrence;
   final ValueChanged<RecurrencePattern>? onRecurrenceChanged;
   final ValueChanged<List<String>>? onAssignedUsersChanged;
+  final ValueChanged<bool>? onApplyGlobalRecurrenceChanged;
 
   const TaskReviewGlobalSettings({
     super.key,
     required this.initialRecurrence,
     required this.availableUsers,
     this.initialAssignedUsers = const [],
+    this.applyGlobalRecurrence = false,
     this.onRecurrenceChanged,
     this.onAssignedUsersChanged,
+    this.onApplyGlobalRecurrenceChanged,
   });
 
   @override
@@ -72,11 +76,19 @@ class _TaskReviewGlobalSettingsState extends State<TaskReviewGlobalSettings> {
                     color: Theme.of(context).primaryColor,
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    loc.taskReviewGlobalSettings,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: Text(
+                      loc.taskReviewGlobalSettings,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
+                  ),
+                  Switch(
+                    value: widget.applyGlobalRecurrence,
+                    onChanged: (value) {
+                      widget.onApplyGlobalRecurrenceChanged?.call(value);
+                    },
                   ),
                 ],
               ),

@@ -9,6 +9,7 @@ import 'package:record/record.dart';
 
 // ignore: depend_on_referenced_packages
 import 'package:path/path.dart' as p;
+import 'package:smartopia_hms_client/widgets/card.dart';
 import '../l10n/app_localizations.dart';
 
 class TaskCreationOptions extends StatelessWidget {
@@ -19,6 +20,11 @@ class TaskCreationOptions extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(200),
+        //color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: SafeArea(
         child: SingleChildScrollView(
           child: Column(
@@ -137,7 +143,9 @@ class _OptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return buildCard(
+      context,
+      color: Colors.white.withAlpha(220),
       elevation: 2,
       child: InkWell(
         onTap: onTap,

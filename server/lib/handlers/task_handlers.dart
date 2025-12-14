@@ -445,27 +445,11 @@ Future<Response> purgeTasks(RequestContext context) async {
     // 2. Get all tasks
     final allTasks = await database.select(database.tasks).get();
 
-    // 3. Filter tasks assigned to any child
-    final tasksToDelete = allTasks
-        .where((task) {
-          // task.assignedUsers is List<String>
-          return task.assignedUsers.any(childrenUsernames.contains);
-        })
-        .map((t) => t.id)
-        .toList();
-
-    if (tasksToDelete.isEmpty) {
-      return Response.json(
-          body: {'success': true, 'message': 'No tasks to delete'});
-    }
-
-    // 4. Delete tasks
-    await (database.delete(database.tasks)
-          ..where((t) => t.id.isIn(tasksToDelete)))
-        .go();
+    // 3. Delete tasks
+    await database.delete(database.tasks).go();
 
     return Response.json(
-        body: {'success': true, 'deletedCount': tasksToDelete.length});
+        body: {'success': true, 'deletedCount': allTasks.length});
   } catch (e) {
     return Response.json(statusCode: 500, body: {'error': e.toString()});
   }

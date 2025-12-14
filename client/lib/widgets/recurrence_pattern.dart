@@ -70,7 +70,6 @@ const String zhCN = '''
 ''';
 
 class RecurrencePatternLabels {
-
   RecurrencePatternLabels({Locale? locale}) {
     locale ??= WidgetsBinding.instance.platformDispatcher.locale;
     _labels = _load(locale);
@@ -88,13 +87,13 @@ class RecurrencePatternLabels {
 
   late Map<String, String> _labels;
 
-
   String _getLabel(String key) {
     return _labels[key] ?? key;
   }
 
-  String _getRecurrenceTypeLabel(RecurrencePatternType type) => _getLabel(type.name);
-  
+  String _getRecurrenceTypeLabel(RecurrencePatternType type) =>
+      _getLabel(type.name);
+
   String get monday => _getLabel('monday');
   String get tuesday => _getLabel('tuesday');
   String get wednesday => _getLabel('wednesday');
@@ -119,7 +118,6 @@ class RecurrencePatternLabels {
   String get dueDateTime => _getLabel('dueDateTime');
   String get stopRecurrenceAfter => _getLabel('stopRecurrenceAfter');
   String get timeAlreadySelected => _getLabel('timeAlreadySelected');
-
 }
 
 class RecurrencePatternPicker extends StatefulWidget {
@@ -142,7 +140,6 @@ class RecurrencePatternPicker extends StatefulWidget {
 }
 
 class _RecurrencePatternPickerState extends State<RecurrencePatternPicker> {
-
   // current recurrence pattern selected
   //late RecurrencePattern _selectedRecurrencePattern;
 
@@ -153,52 +150,93 @@ class _RecurrencePatternPickerState extends State<RecurrencePatternPicker> {
   // cache for recurrence patterns, to avoid re-inputing information
   //final Map<RecurrencePatternType, RecurrencePattern> _recurrencePatternsCache = {};
 
-
   final List<int> _selectedWeekdays = []; // for Weekly pattern
   final List<int> _selectedDaysOfMonth = []; // for Monthly pattern
   final List<int> _selectedMinutes = []; // for Hourly pattern
   //final List<material.TimeOfDay> _selectedTimesOfDay = []; // for Daily, Weekly, Monthly, Yearly patterns
   final List<MonthDay> _selectedDates = []; // for yearly patterns
-  late DateTime _startDateTime; 
-  DateTime? _dueDateTime; 
+  late DateTime _startDateTime;
+  DateTime? _dueDateTime;
   DateTime? _stopRecurrenceAfter;
   late RecurrencePatternLabels _labels;
   late RecurrencePatternType _recurrenceType;
 
-  List<shared.TimeOfDay> constructTimesOfDay(){
-    return [shared.TimeOfDay(hour: _startDateTime.hour, minute: _startDateTime.minute)];
+  List<shared.TimeOfDay> constructTimesOfDay() {
+    return [
+      shared.TimeOfDay(
+        hour: _startDateTime.hour,
+        minute: _startDateTime.minute,
+      ),
+    ];
   }
 
   RecurrencePattern constructRecurrencePattern() {
     switch (_recurrenceType) {
       case RecurrencePatternType.once:
-        return OncePattern(startDateTime: _startDateTime, dueDateTime: _dueDateTime);
+        return OncePattern(
+          startDateTime: _startDateTime,
+          dueDateTime: _dueDateTime,
+        );
       case RecurrencePatternType.hourly:
         if (_selectedMinutes.isEmpty) {
-          throw Exception('Hourly recurrence must have at least one minute selected');
+          throw Exception(
+            'Hourly recurrence must have at least one minute selected',
+          );
         }
-        return HourlyPattern(startDateTime: _startDateTime, minutes: _selectedMinutes, stopRecurrenceAfter: _stopRecurrenceAfter);
+        return HourlyPattern(
+          startDateTime: _startDateTime,
+          minutes: _selectedMinutes,
+          stopRecurrenceAfter: _stopRecurrenceAfter,
+        );
       case RecurrencePatternType.daily:
-        return DailyPattern(startDateTime: _startDateTime, dueDateTime: _dueDateTime, stopRecurrenceAfter: _stopRecurrenceAfter, times: constructTimesOfDay());
+        return DailyPattern(
+          startDateTime: _startDateTime,
+          dueDateTime: _dueDateTime,
+          stopRecurrenceAfter: _stopRecurrenceAfter,
+          times: constructTimesOfDay(),
+        );
       case RecurrencePatternType.weekly:
         if (_selectedWeekdays.isEmpty) {
-          throw Exception('Weekly recurrence must have at least one weekday selected');
+          throw Exception(
+            'Weekly recurrence must have at least one weekday selected',
+          );
         }
-        return WeeklyPattern(startDateTime: _startDateTime, dueDateTime: _dueDateTime, stopRecurrenceAfter: _stopRecurrenceAfter, weekdays: _selectedWeekdays, times: constructTimesOfDay());
+        return WeeklyPattern(
+          startDateTime: _startDateTime,
+          dueDateTime: _dueDateTime,
+          stopRecurrenceAfter: _stopRecurrenceAfter,
+          weekdays: _selectedWeekdays,
+          times: constructTimesOfDay(),
+        );
       case RecurrencePatternType.monthly:
         if (_selectedDaysOfMonth.isEmpty) {
-          throw Exception('Monthly recurrence must have at least one day of month selected');
+          throw Exception(
+            'Monthly recurrence must have at least one day of month selected',
+          );
         }
-        return MonthlyPattern(startDateTime: _startDateTime, dueDateTime: _dueDateTime, stopRecurrenceAfter: _stopRecurrenceAfter, daysOfMonth: _selectedDaysOfMonth, times: constructTimesOfDay());
+        return MonthlyPattern(
+          startDateTime: _startDateTime,
+          dueDateTime: _dueDateTime,
+          stopRecurrenceAfter: _stopRecurrenceAfter,
+          daysOfMonth: _selectedDaysOfMonth,
+          times: constructTimesOfDay(),
+        );
       case RecurrencePatternType.yearly:
         if (_selectedDates.isEmpty) {
-          throw Exception('Yearly recurrence must have at least one month-day selected');
+          throw Exception(
+            'Yearly recurrence must have at least one month-day selected',
+          );
         }
-        return YearlyPattern(startDateTime: _startDateTime, dueDateTime: _dueDateTime, stopRecurrenceAfter: _stopRecurrenceAfter, monthDays: _selectedDates, times: constructTimesOfDay());
+        return YearlyPattern(
+          startDateTime: _startDateTime,
+          dueDateTime: _dueDateTime,
+          stopRecurrenceAfter: _stopRecurrenceAfter,
+          monthDays: _selectedDates,
+          times: constructTimesOfDay(),
+        );
       default:
         throw Exception('Unknown recurrence pattern type');
     }
-    
   }
 
   @override
@@ -216,22 +254,19 @@ class _RecurrencePatternPickerState extends State<RecurrencePatternPicker> {
       _selectedMinutes
         ..clear()
         ..addAll(p.minutes);
-    } 
-    else if (p is WeeklyPattern) {
+    } else if (p is WeeklyPattern) {
       _selectedWeekdays
         ..clear()
         ..addAll(p.weekdays);
-    } 
-    else if (p is MonthlyPattern){
+    } else if (p is MonthlyPattern) {
       _selectedDaysOfMonth
         ..clear()
         ..addAll(p.daysOfMonth);
-    } 
-    else if (p is YearlyPattern) {
+    } else if (p is YearlyPattern) {
       _selectedDates
         ..clear()
         ..addAll(p.monthDays);
-    } 
+    }
   }
 
   @override
@@ -245,14 +280,10 @@ class _RecurrencePatternPickerState extends State<RecurrencePatternPicker> {
     }
   }
 
-
-
   Widget _buildRecurrenceOption(BuildContext context) {
-
     Widget buildType(RecurrencePatternType type) {
-      return 
-      Expanded( child:
-        RadioListTile<RecurrencePatternType>(
+      return Expanded(
+        child: RadioListTile<RecurrencePatternType>(
           title: Text(_labels._getRecurrenceTypeLabel(type)),
           value: type,
           groupValue: _recurrenceType,
@@ -262,11 +293,11 @@ class _RecurrencePatternPickerState extends State<RecurrencePatternPicker> {
             });
             widget.onChanged(constructRecurrencePattern());
           },
-        )
+        ),
       );
     }
 
-    if (widget.isSmallScreen){
+    if (widget.isSmallScreen) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -274,57 +305,79 @@ class _RecurrencePatternPickerState extends State<RecurrencePatternPicker> {
           SizedBox(width: 10),
           Transform.scale(
             scale: 0.8,
-            child:
-          DropdownMenu(dropdownMenuEntries: [
-            DropdownMenuEntry<RecurrencePatternType>(
-              label: _labels._getRecurrenceTypeLabel(RecurrencePatternType.once),
-              value: RecurrencePatternType.once,
-            ),
-            DropdownMenuEntry<RecurrencePatternType>(
-              label: _labels._getRecurrenceTypeLabel(RecurrencePatternType.hourly),
-              value: RecurrencePatternType.hourly,
-            ),
-            DropdownMenuEntry<RecurrencePatternType>(
-              label: _labels._getRecurrenceTypeLabel(RecurrencePatternType.daily),
-              value: RecurrencePatternType.daily,
-            ),
-            DropdownMenuEntry<RecurrencePatternType>(
-              label: _labels._getRecurrenceTypeLabel(RecurrencePatternType.weekly),
-              value: RecurrencePatternType.weekly,
-            ),
-            DropdownMenuEntry<RecurrencePatternType>(
-              label: _labels._getRecurrenceTypeLabel(RecurrencePatternType.monthly),
-              value: RecurrencePatternType.monthly,
-            ),
-            DropdownMenuEntry<RecurrencePatternType>(
-              label: _labels._getRecurrenceTypeLabel(RecurrencePatternType.yearly),
-              value: RecurrencePatternType.yearly,
-            )
-            ], 
-            initialSelection: _recurrenceType,
-            onSelected: (RecurrencePatternType? v) {
-              setState(() {
-                if (v != null) {
-                  _recurrenceType = v;
-                  if (v == RecurrencePatternType.hourly && _selectedMinutes.isEmpty) {
-                    _selectedMinutes.add(_startDateTime.minute); // default to 0 minute if none selected
-                  //} else if (v == RecurrencePatternType.daily && _startDateTime.hour == 0 && _startDateTime.minute == 0) {
-                  //  _startDateTime = DateTime(_startDateTime.year, _startDateTime.month, _startDateTime.day, 0, 0);
-                  }else if (v == RecurrencePatternType.weekly && _selectedWeekdays.isEmpty) {
-                    _selectedWeekdays.addAll([_startDateTime.weekday]);
-                  } else if (v == RecurrencePatternType.monthly && _selectedDaysOfMonth.isEmpty) {
-                    _selectedDaysOfMonth.add(_startDateTime.day);
-                  } else if (v == RecurrencePatternType.yearly && _selectedDates.isEmpty) {
-                    _selectedDates.add(MonthDay(month: _startDateTime.month, day: _startDateTime.day));
-
+            child: DropdownMenu(
+              dropdownMenuEntries: [
+                DropdownMenuEntry<RecurrencePatternType>(
+                  label: _labels._getRecurrenceTypeLabel(
+                    RecurrencePatternType.once,
+                  ),
+                  value: RecurrencePatternType.once,
+                ),
+                DropdownMenuEntry<RecurrencePatternType>(
+                  label: _labels._getRecurrenceTypeLabel(
+                    RecurrencePatternType.hourly,
+                  ),
+                  value: RecurrencePatternType.hourly,
+                ),
+                DropdownMenuEntry<RecurrencePatternType>(
+                  label: _labels._getRecurrenceTypeLabel(
+                    RecurrencePatternType.daily,
+                  ),
+                  value: RecurrencePatternType.daily,
+                ),
+                DropdownMenuEntry<RecurrencePatternType>(
+                  label: _labels._getRecurrenceTypeLabel(
+                    RecurrencePatternType.weekly,
+                  ),
+                  value: RecurrencePatternType.weekly,
+                ),
+                DropdownMenuEntry<RecurrencePatternType>(
+                  label: _labels._getRecurrenceTypeLabel(
+                    RecurrencePatternType.monthly,
+                  ),
+                  value: RecurrencePatternType.monthly,
+                ),
+                DropdownMenuEntry<RecurrencePatternType>(
+                  label: _labels._getRecurrenceTypeLabel(
+                    RecurrencePatternType.yearly,
+                  ),
+                  value: RecurrencePatternType.yearly,
+                ),
+              ],
+              initialSelection: _recurrenceType,
+              onSelected: (RecurrencePatternType? v) {
+                setState(() {
+                  if (v != null) {
+                    _recurrenceType = v;
+                    if (v == RecurrencePatternType.hourly &&
+                        _selectedMinutes.isEmpty) {
+                      _selectedMinutes.add(
+                        _startDateTime.minute,
+                      ); // default to 0 minute if none selected
+                      //} else if (v == RecurrencePatternType.daily && _startDateTime.hour == 0 && _startDateTime.minute == 0) {
+                      //  _startDateTime = DateTime(_startDateTime.year, _startDateTime.month, _startDateTime.day, 0, 0);
+                    } else if (v == RecurrencePatternType.weekly &&
+                        _selectedWeekdays.isEmpty) {
+                      _selectedWeekdays.addAll([_startDateTime.weekday]);
+                    } else if (v == RecurrencePatternType.monthly &&
+                        _selectedDaysOfMonth.isEmpty) {
+                      _selectedDaysOfMonth.add(_startDateTime.day);
+                    } else if (v == RecurrencePatternType.yearly &&
+                        _selectedDates.isEmpty) {
+                      _selectedDates.add(
+                        MonthDay(
+                          month: _startDateTime.month,
+                          day: _startDateTime.day,
+                        ),
+                      );
+                    }
                   }
-                }
-              });
-              widget.onChanged(constructRecurrencePattern());
-            },
-            
-          ))
-        ]
+                });
+                widget.onChanged(constructRecurrencePattern());
+              },
+            ),
+          ),
+        ],
       );
     } else {
       return Row(
@@ -335,7 +388,7 @@ class _RecurrencePatternPickerState extends State<RecurrencePatternPicker> {
           buildType(RecurrencePatternType.weekly),
           buildType(RecurrencePatternType.monthly),
           buildType(RecurrencePatternType.yearly),
-        ]
+        ],
       );
     }
   }
@@ -343,24 +396,30 @@ class _RecurrencePatternPickerState extends State<RecurrencePatternPicker> {
   Widget _buildMonthlyPattern(BuildContext context) {
     return Wrap(
       spacing: 8,
-      children: List<int>.generate(32, (index) => index + 1).map((day) {
-        return Padding(padding: EdgeInsets.symmetric(vertical: 5),
-          child:  ChoiceChip(
-            label: Text(day == MonthlyPattern.lastDayOfMonth ? _labels.lastDayOfMonth : day.toString()),
-            selected: _selectedDaysOfMonth.contains(day),
-            onSelected: (selected) {
-              setState(() {
-                if (selected) {
-                  _selectedDaysOfMonth.add(day);
-                } else {
-                  _selectedDaysOfMonth.remove(day);
-                }
-              });
-              widget.onChanged(constructRecurrencePattern());
-            },
-          )
-        );
-      }).toList(),
+      children:
+          List<int>.generate(32, (index) => index + 1).map((day) {
+            return Padding(
+              padding: EdgeInsets.symmetric(vertical: 5),
+              child: ChoiceChip(
+                label: Text(
+                  day == MonthlyPattern.lastDayOfMonth
+                      ? _labels.lastDayOfMonth
+                      : day.toString(),
+                ),
+                selected: _selectedDaysOfMonth.contains(day),
+                onSelected: (selected) {
+                  setState(() {
+                    if (selected) {
+                      _selectedDaysOfMonth.add(day);
+                    } else {
+                      _selectedDaysOfMonth.remove(day);
+                    }
+                  });
+                  widget.onChanged(constructRecurrencePattern());
+                },
+              ),
+            );
+          }).toList(),
     );
   }
 
@@ -375,10 +434,13 @@ class _RecurrencePatternPickerState extends State<RecurrencePatternPicker> {
       DateTime.sunday: _labels.sunday,
     };
     return Wrap(
-            spacing: 8,
-            children: weekdays.entries.map((e) {
-              final day = e.key;
-              return Padding(padding: EdgeInsets.symmetric(vertical: 5) , child: ChoiceChip(
+      spacing: 8,
+      children:
+          weekdays.entries.map((e) {
+            final day = e.key;
+            return Padding(
+              padding: EdgeInsets.symmetric(vertical: 5),
+              child: ChoiceChip(
                 label: Text(e.value),
                 selected: _selectedWeekdays.contains(day),
                 onSelected: (selected) {
@@ -391,16 +453,20 @@ class _RecurrencePatternPickerState extends State<RecurrencePatternPicker> {
                   });
                   widget.onChanged(constructRecurrencePattern());
                 },
-              ));
-            }).toList(),
-          );
+              ),
+            );
+          }).toList(),
+    );
   }
 
   Widget _buildHourlyPattern(BuildContext context) {
     return Wrap(
-            spacing: 8,
-            children: List<int>.generate(60, (m) => m).map((m) {
-              return Padding(padding: EdgeInsets.symmetric(vertical: 5), child: ChoiceChip(
+      spacing: 8,
+      children:
+          List<int>.generate(60, (m) => m).map((m) {
+            return Padding(
+              padding: EdgeInsets.symmetric(vertical: 5),
+              child: ChoiceChip(
                 label: Text(m.toString()),
                 selected: _selectedMinutes.contains(m),
                 onSelected: (selected) {
@@ -413,9 +479,10 @@ class _RecurrencePatternPickerState extends State<RecurrencePatternPicker> {
                   });
                   widget.onChanged(constructRecurrencePattern());
                 },
-              ));
-            }).toList(),
-          );
+              ),
+            );
+          }).toList(),
+    );
   }
 
   /// Format TimeOfDay as "HH:mm"
@@ -425,74 +492,85 @@ class _RecurrencePatternPickerState extends State<RecurrencePatternPicker> {
     return '$h:$m';
   }
 
-
   String _formatDate(DateTime date) {
+    date = date.toLocal();
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
-
-
   Widget _buildStartDateTime(BuildContext context) {
+    _startDateTime = _startDateTime.toLocal();
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(_labels.startDateTime),
         Container(
-              padding: const EdgeInsets.symmetric(horizontal: 5),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey),
-                borderRadius: BorderRadius.circular(8.0),
-                color: Colors.white70,
+          padding: const EdgeInsets.symmetric(horizontal: 5),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey),
+            borderRadius: BorderRadius.circular(8.0),
+            color: Colors.white70,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 10,
+            children: [
+              GestureDetector(
+                onTap: () async {
+                  final DateTime? date = await showDatePicker(
+                    context: context,
+                    initialDate: _startDateTime,
+                    firstDate: DateTime(_startDateTime.year - 10),
+                    lastDate: DateTime(_startDateTime.year + 10),
+                  );
+                  if (date == null) return;
+                  setState(() {
+                    _startDateTime = DateTime(
+                      date.year,
+                      date.month,
+                      date.day,
+                      _startDateTime.hour,
+                      _startDateTime.minute,
+                    );
+                  });
+                  widget.onChanged(constructRecurrencePattern());
+                },
+                child: Text(_formatDate(_startDateTime)),
               ),
-              child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  spacing: 10,
-                  children: [
-                    GestureDetector(
-                      onTap: () async {
-                        final DateTime? date = await showDatePicker(
-                          context: context,
-                          initialDate: _startDateTime,
-                          firstDate: DateTime(_startDateTime.year - 10),
-                          lastDate: DateTime(_startDateTime.year + 10),
-                        );
-                        if (date == null) return;
-                        setState(() {
-                          _startDateTime = DateTime(
-                            date.year,
-                            date.month,
-                            date.day,
-                            _startDateTime.hour,
-                            _startDateTime.minute,
-                          );
-                        });
-                        widget.onChanged(constructRecurrencePattern());
-                      },
-                      child: Text(_formatDate(_startDateTime)),
+              GestureDetector(
+                onTap: () async {
+                  final t = await showTimePicker(
+                    context: context,
+                    initialTime: material.TimeOfDay(
+                      hour: _startDateTime.hour,
+                      minute: _startDateTime.minute,
                     ),
-                    GestureDetector(
-                      onTap: () async {
-                        final t = await showTimePicker(context: context, initialTime: material.TimeOfDay(hour: _startDateTime.hour, minute: _startDateTime.minute));
-                        if (t == null) return;
-                          setState(() {
-                            _startDateTime = DateTime(
-                              _startDateTime.year,
-                              _startDateTime.month,
-                              _startDateTime.day,
-                              t.hour,
-                              t.minute,
-                            );
-                            widget.onChanged(constructRecurrencePattern());
-                          });
-                      },
-                      child: Text(_formatTimeOfDay(material.TimeOfDay(hour: _startDateTime.hour, minute: _startDateTime.minute))),
+                  );
+                  if (t == null) return;
+                  setState(() {
+                    _startDateTime = DateTime(
+                      _startDateTime.year,
+                      _startDateTime.month,
+                      _startDateTime.day,
+                      t.hour,
+                      t.minute,
+                    );
+                    widget.onChanged(constructRecurrencePattern());
+                  });
+                },
+                child: Text(
+                  _formatTimeOfDay(
+                    material.TimeOfDay(
+                      hour: _startDateTime.hour,
+                      minute: _startDateTime.minute,
                     ),
-                  ],
+                  ),
                 ),
-            ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
-      
   }
 
   Widget _buildDueDateTime(BuildContext context) {
@@ -501,67 +579,77 @@ class _RecurrencePatternPickerState extends State<RecurrencePatternPicker> {
       children: [
         Text('${_labels.dueDateTime} '),
         Container(
-              padding: const EdgeInsets.symmetric(horizontal: 5),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey),
-                borderRadius: BorderRadius.circular(8.0),
-                color: Colors.white70,
+          padding: const EdgeInsets.symmetric(horizontal: 5),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey),
+            borderRadius: BorderRadius.circular(8.0),
+            color: Colors.white70,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 10,
+            children: [
+              GestureDetector(
+                onTap: () async {
+                  final DateTime? date = await showDatePicker(
+                    context: context,
+                    initialDate: _startDateTime,
+                    firstDate: DateTime(_startDateTime.year - 10),
+                    lastDate: DateTime(_startDateTime.year + 10),
+                  );
+                  if (date == null) return;
+                  setState(() {
+                    _dueDateTime = DateTime(
+                      date.year,
+                      date.month,
+                      date.day,
+                      _dueDateTime?.hour ?? _startDateTime.hour + 1,
+                      _dueDateTime?.minute ?? _startDateTime.minute,
+                    );
+                  });
+                  widget.onChanged(constructRecurrencePattern());
+                },
+                child: Text(_formatDate(_dueDateTime ?? _startDateTime)),
               ),
-              child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  spacing: 10,
-                  children: [
-                    GestureDetector(
-                      onTap: () async {
-                        final DateTime? date = await showDatePicker(
-                          context: context,
-                          initialDate: _startDateTime,
-                          firstDate: DateTime(_startDateTime.year - 10),
-                          lastDate: DateTime(_startDateTime.year + 10),
-                        );
-                        if (date == null) return;
-                        setState(() {
-                          _dueDateTime = DateTime(
-                            date.year,
-                            date.month,
-                            date.day,
-                            _dueDateTime?.hour ?? _startDateTime.hour+1,
-                            _dueDateTime?.minute ?? _startDateTime.minute,
-                          );
-                        });
-                        widget.onChanged(constructRecurrencePattern());
-                      },
-                      child: Text(_formatDate(_dueDateTime ?? _startDateTime)),
+              GestureDetector(
+                onTap: () async {
+                  final t = await showTimePicker(
+                    context: context,
+                    initialTime: material.TimeOfDay(
+                      hour: _startDateTime.hour,
+                      minute: _startDateTime.minute,
                     ),
-                    GestureDetector(
-                      onTap: () async {
-                        final t = await showTimePicker(context: context, initialTime: material.TimeOfDay(hour: _startDateTime.hour, minute: _startDateTime.minute));
-                        if (t == null) return;
-                          setState(() {
-                            _dueDateTime = DateTime(
-                              _dueDateTime?.year ?? _startDateTime.year,
-                              _dueDateTime?.month ?? _startDateTime.month,
-                              _dueDateTime?.day ?? _startDateTime.day,
-                              t.hour,
-                              t.minute,
-                            );
-                          });
-                          widget.onChanged(constructRecurrencePattern());
-                          
-                      },
-                      child: Text(_formatTimeOfDay(material.TimeOfDay(hour: _dueDateTime?.hour ?? _startDateTime.hour, 
-                        minute: _dueDateTime?.minute ?? _startDateTime.minute))),
+                  );
+                  if (t == null) return;
+                  setState(() {
+                    _dueDateTime = DateTime(
+                      _dueDateTime?.year ?? _startDateTime.year,
+                      _dueDateTime?.month ?? _startDateTime.month,
+                      _dueDateTime?.day ?? _startDateTime.day,
+                      t.hour,
+                      t.minute,
+                    );
+                  });
+                  widget.onChanged(constructRecurrencePattern());
+                },
+                child: Text(
+                  _formatTimeOfDay(
+                    material.TimeOfDay(
+                      hour: _dueDateTime?.hour ?? _startDateTime.hour,
+                      minute: _dueDateTime?.minute ?? _startDateTime.minute,
                     ),
-                  ],
+                  ),
                 ),
-            ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: 10,
@@ -569,12 +657,15 @@ class _RecurrencePatternPickerState extends State<RecurrencePatternPicker> {
         _buildStartDateTime(context),
         _buildDueDateTime(context),
         _buildRecurrenceOption(context),
-        if (_recurrenceType == RecurrencePatternType.hourly) _buildHourlyPattern(context),
-        if (_recurrenceType == RecurrencePatternType.weekly) _buildWeeklyPattern(context),
-        if (_recurrenceType == RecurrencePatternType.monthly) _buildMonthlyPattern(context),
+        if (_recurrenceType == RecurrencePatternType.hourly)
+          _buildHourlyPattern(context),
+        if (_recurrenceType == RecurrencePatternType.weekly)
+          _buildWeeklyPattern(context),
+        if (_recurrenceType == RecurrencePatternType.monthly)
+          _buildMonthlyPattern(context),
         SizedBox(height: 10),
-        //if (_recurrenceType != RecurrencePatternType.once && _recurrenceType != RecurrencePatternType.hourly) _buildTimePicker(context), 
-        
+
+        //if (_recurrenceType != RecurrencePatternType.once && _recurrenceType != RecurrencePatternType.hourly) _buildTimePicker(context),
       ],
     );
   }

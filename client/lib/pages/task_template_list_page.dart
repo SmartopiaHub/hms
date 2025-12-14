@@ -173,6 +173,7 @@ class _TastTemplateListPageState extends PageBaseState<TastTemplateListPage> {
             }
 
             final result = await showModalBottomSheet(
+              backgroundColor: Colors.transparent,
               context: context,
               builder: (context) => const TaskCreationOptions(),
               isScrollControlled: true,

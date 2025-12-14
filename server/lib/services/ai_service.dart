@@ -60,7 +60,9 @@ class AiService {
   static const String _defaultOpenAIModel = 'gpt-5.2';
   static const String _defaultSTTModel = 'whisper-1';
 
-  static const String _defaultSystemPrompt = '''
+  static String _getDefaultSystemPrompt() {
+    final now = DateTime.now();
+    return '''
 You are a task extraction assistant. Analyze the provided content (images, PDFs, or transcribed text) and extract actionable tasks.
 
 Extract each task with the following fields:
@@ -73,7 +75,7 @@ Extract each task with the following fields:
 - startDateTime: String in ISO 8601 format (optional)
 - endDateTime: String in ISO 8601 format (optional)
 
-Try to deduce the absolute date and time of the task with reference to the current date and time. For example, if the current date is 2025-12-14 and the task is scheduled on Friday, the due date should be 2025-12-19.
+Try to deduce the absolute date and time of the task with reference to the current time ${now.toIso8601String()} at timezone ${now.timeZoneName}. For example, if the current date is 2025-12-14 and the task is scheduled on Friday, the due date should be 2025-12-19.
 
 Only extract tasks that are explicitly stated or clearly implied as actionable items in the provided content.
 
@@ -85,6 +87,7 @@ Do NOT rewrite general information as a task.
 
 Return tasks as a structured JSON array.
 ''';
+  }
 
   /// JSON Schema for structured output
   static final Map<String, dynamic> taskSchema = {
@@ -140,7 +143,7 @@ Return tasks as a structured JSON array.
             {'type': 'input_file', 'file_id': fileId},
             {
               'type': 'input_text',
-              'text': config?.systemPrompt ?? _defaultSystemPrompt,
+              'text': config?.systemPrompt ?? _getDefaultSystemPrompt(),
             }
           ]
         }
@@ -226,6 +229,7 @@ Return tasks as a structured JSON array.
     return null;
   }
 
+  /// Extracts tasks from voice using configured AI provider
   Future<List<Map<String, dynamic>>?> extractTasksFromVoice(File voice) async {
     try {
       // for testing
@@ -253,6 +257,7 @@ Return tasks as a structured JSON array.
     }
   }
 
+  /// Extracts tasks from text using configured AI provider
   Future<List<Map<String, dynamic>>?> extractTasksFromText(String text) async {
     try {
       await init();
@@ -264,7 +269,7 @@ Return tasks as a structured JSON array.
             {'type': 'input_text', 'text': text},
             {
               'type': 'input_text',
-              'text': config?.systemPrompt ?? _defaultSystemPrompt,
+              'text': config?.systemPrompt ?? _getDefaultSystemPrompt(),
             }
           ]
         }

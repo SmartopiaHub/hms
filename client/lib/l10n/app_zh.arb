@@ -672,5 +672,7 @@
   "reviewTasks": "审查任务",
   "noTasksToReview": "没有任务可审查",
   "errorSavingTasks": "保存任务时出错: {error}",
-  "failedToExtractTasks": "提取任务失败: {error}"
+  "failedToExtractTasks": "提取任务失败: {error}",
+  "applyGlobalRecurrence": "应用全局重复设置",
+  "applyGlobalRecurrenceConfirmation": "这将覆盖所有单独的任务重复设置，确定吗？"
 }

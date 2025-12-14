@@ -2317,6 +2317,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to extract tasks: {error}'**
   String failedToExtractTasks(String error);
+
+  /// No description provided for @applyGlobalRecurrence.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply Global Recurrence'**
+  String get applyGlobalRecurrence;
+
+  /// No description provided for @applyGlobalRecurrenceConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'This will override all individual task recurrence settings. Are you sure?'**
+  String get applyGlobalRecurrenceConfirmation;
 }
 
 class _AppLocalizationsDelegate

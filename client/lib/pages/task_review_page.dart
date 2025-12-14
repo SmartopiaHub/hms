@@ -28,11 +28,11 @@ class _TaskReviewPageState extends PageBaseState<TaskReviewPage> {
   // Per-task settings
   final Map<int, List<String>> _taskAssignedUsers = {};
   final Map<int, int> _taskRewardPoints = {};
-  final Map<int, RecurrencePattern> _taskRecurrence = {};
 
   // Global batch settings
   late RecurrencePattern _globalRecurrence;
   List<String> _globalAssignedUsers = [];
+  bool _applyGlobalRecurrence = false;
 
   // Available users for dropdown
   List<String> _availableUsers = [];
@@ -133,10 +133,10 @@ class _TaskReviewPageState extends PageBaseState<TaskReviewPage> {
         }
 
         // 3. Apply recurrence
-        // Priority: AI setting > Per-task override > Global setting > (Original AI setting ignored as per previous logic, but implicitly overridden by global default if not set)
-        // Actually, logic is: Use override if set, else use global.
-        final effectiveRecurrence = _taskRecurrence[i] ?? _globalRecurrence;
-        task = task.copyWith(recurrence: effectiveRecurrence);
+        // If global toggle is on, override everything. Otherwise respect task's own recurrence.
+        if (_applyGlobalRecurrence) {
+          task = task.copyWith(recurrence: _globalRecurrence);
+        }
 
         final taskToCreate = task.copyWith(id: 0);
         final success = await apiService.createTaskTemplate(taskToCreate);
@@ -184,10 +184,10 @@ class _TaskReviewPageState extends PageBaseState<TaskReviewPage> {
           itemCount: _tasks.length,
           itemBuilder: (context, index) {
             var task = _tasks[index];
-            // Apply effective recurrence for display
-            final effectiveRecurrence =
-                _taskRecurrence[index] ?? _globalRecurrence;
-            task = task.copyWith(recurrence: effectiveRecurrence);
+            // Apply effective recurrence for display if global is on
+            if (_applyGlobalRecurrence) {
+              task = task.copyWith(recurrence: _globalRecurrence);
+            }
 
             return TaskTemplateItem(
               template: task,
@@ -208,7 +208,19 @@ class _TaskReviewPageState extends PageBaseState<TaskReviewPage> {
               },
               onRecurrenceChanged: (pattern) {
                 setState(() {
-                  _taskRecurrence[index] = pattern;
+                  // Direct modification
+                  // If global is on, user should probably be warned or we assume editing individual task disables global override?
+                  // Requirement: "if it is on, apply the global setting to all tasks regardless of their own setting."
+                  // This implies if they edit an individual one, it might conflict.
+                  // For now, let's just update the individual task. If global is ON, it will likely visually override it due to the 'if' above.
+                  // Maybe we should disable editing if global is on?
+                  // Or better, let's assume editing a specific one is allowed but the global toggle needs to be respected.
+                  // If I edit one, I update the underlying task. But if global is ON, the UI shows global.
+                  // So editing has no visual effect until global is OFF.
+                  // Ideally we disable the picker if _applyGlobalRecurrence is true.
+
+                  // For MVP per request: "modify the corresponding task"
+                  _tasks[index] = _tasks[index].copyWith(recurrence: pattern);
                 });
               },
               onEdit: () async {
@@ -233,7 +245,7 @@ class _TaskReviewPageState extends PageBaseState<TaskReviewPage> {
                   _tasks.removeAt(index);
                   _taskAssignedUsers.remove(index);
                   _taskRewardPoints.remove(index);
-                  _taskRecurrence.remove(index);
+                  //_taskRecurrence.remove(index);
                 });
               },
             );
@@ -245,6 +257,7 @@ class _TaskReviewPageState extends PageBaseState<TaskReviewPage> {
           initialRecurrence: _globalRecurrence,
           availableUsers: _availableUsers,
           initialAssignedUsers: _globalAssignedUsers,
+          applyGlobalRecurrence: _applyGlobalRecurrence,
           onRecurrenceChanged: (pattern) {
             setState(() {
               _globalRecurrence = pattern;
@@ -254,6 +267,37 @@ class _TaskReviewPageState extends PageBaseState<TaskReviewPage> {
             setState(() {
               _globalAssignedUsers = users;
             });
+          },
+          onApplyGlobalRecurrenceChanged: (value) async {
+            if (value) {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder:
+                    (context) => AlertDialog(
+                      title: Text(loc.applyGlobalRecurrence),
+                      content: Text(loc.applyGlobalRecurrenceConfirmation),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: Text(loc.cancel),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: Text(loc.confirm),
+                        ),
+                      ],
+                    ),
+              );
+              if (confirm == true) {
+                setState(() {
+                  _applyGlobalRecurrence = true;
+                });
+              }
+            } else {
+              setState(() {
+                _applyGlobalRecurrence = false;
+              });
+            }
           },
         ),
 

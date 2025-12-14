@@ -88,7 +88,8 @@ Future<Response> onRequest(RequestContext context) async {
         if (task['startDateTime'] != null) {
           final pattern = OncePattern(
             startDateTime: DateTime.parse(task['startDateTime'] as String),
-            dueDateTime: task['endDateTime'] != null
+            dueDateTime: task['endDateTime'] != null &&
+                    (task['endDateTime'] as String).isNotEmpty
                 ? DateTime.parse(task['endDateTime'] as String)
                 : null,
           );

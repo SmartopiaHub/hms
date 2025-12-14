@@ -19,15 +19,6 @@ import 'package:provider/provider.dart';
 import '../authenticator.dart';
 import '../l10n/app_localizations.dart';
 
-String _formatDateTime(DateTime dt) {
-  final y = dt.year;
-  final m = dt.month.toString().padLeft(2, '0');
-  final d = dt.day.toString().padLeft(2, '0');
-  final h = dt.hour.toString().padLeft(2, '0');
-  final min = dt.minute.toString().padLeft(2, '0');
-  return '$y-$m-$d $h:$min';
-}
-
 class TaskTemplateItem extends StatefulWidget {
   final TaskTemplate template;
   final VoidCallback? onEdit;
@@ -117,7 +108,7 @@ class _TaskTemplateItemState extends State<TaskTemplateItem> {
 
     if (recurrence is OncePattern) {
       text =
-          '${loc.rpOnce} ${recurrence.dueDateTime != null ? _formatDateTime(recurrence.dueDateTime!) : ""}';
+          '${loc.rpOnce} ${recurrence.dueDateTime != null ? formatDateTime(recurrence.dueDateTime!) : ""}';
     } else if (recurrence is HourlyPattern) {
       text = loc.rpHourly;
     } else if (recurrence is DailyPattern) {

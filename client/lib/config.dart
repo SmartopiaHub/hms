@@ -6,14 +6,17 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api.dart';
+import 'utility.dart';
 
 class AppConfig extends ChangeNotifier {
   ThemeMode _themeMode;
   Locale _locale;
 
-  AppConfig({ThemeMode themeMode = ThemeMode.light, Locale locale = const Locale('en', 'US')})
-      : _themeMode = themeMode,
-        _locale = locale;
+  AppConfig({
+    ThemeMode themeMode = ThemeMode.light,
+    Locale locale = const Locale('en', 'US'),
+  }) : _themeMode = themeMode,
+       _locale = locale;
 
   ThemeMode get themeMode => _themeMode;
   Locale get locale => _locale;
@@ -37,8 +40,11 @@ class AppConfig extends ChangeNotifier {
     final isDark = prefs.getBool('isDark') ?? false;
     final localeStr = prefs.getString('locale') ?? 'en';
     final parts = localeStr.split('_');
-    final locale = Locale(parts[0], parts.length>1?parts[1]:null);
-    return AppConfig(themeMode: isDark ? ThemeMode.dark : ThemeMode.light, locale:  locale);
+    final locale = Locale(parts[0], parts.length > 1 ? parts[1] : null);
+    return AppConfig(
+      themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
+      locale: locale,
+    );
   }
 
   bool _pointSystemEnabled = true;
@@ -55,6 +61,11 @@ class AppConfig extends ChangeNotifier {
       final config = await apiService.getConfig();
       if (config != null) {
         _pointSystemEnabled = config['pointSystemEnabled'] as bool? ?? true;
+
+        // Set global server time zone
+        if (config['serverTimeZone'] != null) {
+          serverTimeZone = config['serverTimeZone'] as String;
+        }
       }
     } catch (e) {
       // Default to enabled if error

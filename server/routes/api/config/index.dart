@@ -21,11 +21,16 @@ Future<Response> onRequest(RequestContext context) async {
 Future<Response> _getConfig(RequestContext context) async {
   try {
     final configFile = File('data/config.json');
-    
+
     if (!await configFile.exists()) {
       // Return default config if file doesn't exist
+      final now = DateTime.now();
       return Response.json(
-        body: {'pointSystemEnabled': true},
+        body: {
+          'pointSystemEnabled': true,
+          'serverTimeZone': now.timeZoneName,
+          'serverTime': now.toIso8601String(),
+        },
       );
     }
 
@@ -37,6 +42,12 @@ Future<Response> _getConfig(RequestContext context) async {
     }
 
     final config = jsonDecode(content) as Map<String, dynamic>;
+
+    // Inject server time info
+    final now = DateTime.now();
+    config['serverTimeZone'] = now.timeZoneName;
+    config['serverTime'] = now.toIso8601String();
+
     return Response.json(body: config);
   } catch (e, st) {
     logError('Failed to get config', e, st);
@@ -51,7 +62,7 @@ Future<Response> _updateConfig(RequestContext context) async {
   try {
     final body = await context.request.json() as Map<String, dynamic>;
     final configFile = File('data/config.json');
-    
+
     // Ensure the data directory exists
     if (!await configFile.parent.exists()) {
       await configFile.parent.create(recursive: true);

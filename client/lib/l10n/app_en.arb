@@ -399,5 +399,7 @@
         "example": "Network error"
       }
     }
-  }
+  },
+  "applyGlobalRecurrence": "Apply Global Recurrence",
+  "applyGlobalRecurrenceConfirmation": "This will override all individual task recurrence settings. Are you sure?"
 }

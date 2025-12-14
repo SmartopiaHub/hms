@@ -1152,4 +1152,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String failedToExtractTasks(String error) {
     return '提取任务失败: $error';
   }
+
+  @override
+  String get applyGlobalRecurrence => '应用全局重复设置';
+
+  @override
+  String get applyGlobalRecurrenceConfirmation => '这将覆盖所有单独的任务重复设置，确定吗？';
 }

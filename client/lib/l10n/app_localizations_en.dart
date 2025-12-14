@@ -1199,4 +1199,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String failedToExtractTasks(String error) {
     return 'Failed to extract tasks: $error';
   }
+
+  @override
+  String get applyGlobalRecurrence => 'Apply Global Recurrence';
+
+  @override
+  String get applyGlobalRecurrenceConfirmation =>
+      'This will override all individual task recurrence settings. Are you sure?';
 }
