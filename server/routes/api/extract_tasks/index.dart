@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dart_frog/dart_frog.dart';
+import 'package:smartopia_hms_server/logger.dart';
 import 'package:smartopia_hms_server/services/ai_service.dart';
+import 'package:smartopia_hms_shared/shared.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {
@@ -49,11 +51,11 @@ Future<Response> onRequest(RequestContext context) async {
     }
 
     // for testing
-    if (File('data/test_tasks.json').existsSync()) {
+    /*if (File('data/test_tasks.json').existsSync()) {
       return Response.json(
         body: jsonDecode(File('data/test_tasks.json').readAsStringSync()),
       );
-    }
+    }*/
 
     final tasks = await aiService.extractTasks(
       images: tempImages,
@@ -72,15 +74,36 @@ Future<Response> onRequest(RequestContext context) async {
 
     // Clean up
     for (final f in tempImages) {
-      if (await f.exists()) await f.delete();
+      if (f.existsSync()) await f.delete();
     }
-    if (tempVoice != null && await tempVoice.exists()) {
+    if (tempVoice != null && tempVoice.existsSync()) {
       await tempVoice.delete();
     }
-    if (tempPdf != null && await tempPdf.exists()) {
+    if (tempPdf != null && tempPdf.existsSync()) {
       await tempPdf.delete();
     }
 
+    for (final task in tasks) {
+      try {
+        if (task['startDateTime'] != null) {
+          final pattern = OncePattern(
+            startDateTime: DateTime.parse(task['startDateTime'] as String),
+            dueDateTime: task['endDateTime'] != null
+                ? DateTime.parse(task['endDateTime'] as String)
+                : null,
+          );
+          task['recurrence'] = pattern.toJson();
+        } else {
+          task['recurrence'] = OncePattern(
+            startDateTime: DateTime.now(),
+            dueDateTime: DateTime.now().add(const Duration(days: 1)),
+          ).toJson();
+        }
+      } catch (e, st) {
+        logError(
+            'Failed to parse recurrence pattern for task ${task['id']}', e, st);
+      }
+    }
     return Response.json(body: tasks);
   } catch (e) {
     return Response.json(
@@ -95,16 +118,14 @@ enum FileType { image, pdf, audio, unknown }
 /// Detect file type based on MIME type or file extension
 FileType _detectFileType(UploadedFile file) {
   // Check MIME type first
-  final contentType = file.contentType?.mimeType.toLowerCase();
+  final contentType = file.contentType.mimeType.toLowerCase();
 
-  if (contentType != null) {
-    if (contentType.startsWith('image/')) {
-      return FileType.image;
-    } else if (contentType == 'application/pdf') {
-      return FileType.pdf;
-    } else if (contentType.startsWith('audio/')) {
-      return FileType.audio;
-    }
+  if (contentType.startsWith('image/')) {
+    return FileType.image;
+  } else if (contentType == 'application/pdf') {
+    return FileType.pdf;
+  } else if (contentType.startsWith('audio/')) {
+    return FileType.audio;
   }
 
   // Fallback to file extension
@@ -134,6 +155,14 @@ FileType _detectFileType(UploadedFile file) {
 Future<File> _saveToTemp(UploadedFile uploadedFile) async {
   final tempDir = await Directory.systemTemp.createTemp('hms_ai_upload_');
   final file = File('${tempDir.path}/${uploadedFile.name}');
-  await file.writeAsBytes(await uploadedFile.readAsBytes());
+  final bytes = await uploadedFile.readAsBytes();
+  await file.writeAsBytes(bytes);
+  // for testing:
+  final dataDir = Directory('data');
+  if (!dataDir.existsSync()) {
+    dataDir.createSync(recursive: true);
+  }
+  final testFile = File('data/${uploadedFile.name}');
+  await testFile.writeAsBytes(bytes);
   return file;
 }

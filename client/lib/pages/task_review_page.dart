@@ -133,7 +133,7 @@ class _TaskReviewPageState extends PageBaseState<TaskReviewPage> {
         }
 
         // 3. Apply recurrence
-        // Priority: Per-task override > Global setting > (Original AI setting ignored as per previous logic, but implicitly overridden by global default if not set)
+        // Priority: AI setting > Per-task override > Global setting > (Original AI setting ignored as per previous logic, but implicitly overridden by global default if not set)
         // Actually, logic is: Use override if set, else use global.
         final effectiveRecurrence = _taskRecurrence[i] ?? _globalRecurrence;
         task = task.copyWith(recurrence: effectiveRecurrence);

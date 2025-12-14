@@ -203,7 +203,7 @@ class _TastTemplateListPageState extends PageBaseState<TastTemplateListPage> {
                   try {
                     List<TaskTemplate> templates = [];
                     if (result['type'] == 'voice') {
-                      templates = await apiService.extractAiTasks(
+                      templates = await apiService.extractTasksByAIAgents(
                         voicePath: result['path'],
                       );
                     } else {
@@ -219,7 +219,7 @@ class _TastTemplateListPageState extends PageBaseState<TastTemplateListPage> {
                           }
                         }
                       }
-                      templates = await apiService.extractAiTasks(
+                      templates = await apiService.extractTasksByAIAgents(
                         images: files,
                       );
                     }

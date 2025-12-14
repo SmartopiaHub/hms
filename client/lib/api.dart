@@ -323,7 +323,12 @@ class ApiService {
     );
     if (response.statusCode == 200) {
       List<dynamic> jsonResponse = jsonDecode(response.body);
-      return jsonResponse.map((task) => TaskTemplate.fromJson(task)).toList();
+      return jsonResponse.map((task) {
+        if (task['rewards'] != null && task['rewards'] is Map) {
+          task['rewards'] = RewardInfo.fromJson(task['rewards']);
+        }
+        return TaskTemplate.fromJson(task);
+      }).toList();
     }
     return [];
   }
@@ -331,7 +336,11 @@ class ApiService {
   Future<TaskTemplate?> fetchTaskTemplate(int id) async {
     final response = await httpGet('tasktemplate/$id');
     if (response.statusCode == 200) {
-      return TaskTemplate.fromJson(jsonDecode(response.body));
+      final task = jsonDecode(response.body);
+      if (task['rewards'] != null && task['rewards'] is Map) {
+        task['rewards'] = RewardInfo.fromJson(task['rewards']);
+      }
+      return TaskTemplate.fromJson(task);
     }
     return null;
   }
@@ -361,7 +370,12 @@ class ApiService {
     final response = await httpPost('tasks/search', body: searchParams);
     if (response.statusCode == 200) {
       List<dynamic> jsonResponse = jsonDecode(response.body);
-      return jsonResponse.map((task) => Task.fromJson(task)).toList();
+      return jsonResponse.map((task) {
+        if (task['rewards'] != null && task['rewards'] is Map) {
+          task['rewards'] = RewardInfo.fromJson(task['rewards']);
+        }
+        return Task.fromJson(task);
+      }).toList();
     }
     return [];
   }
@@ -370,7 +384,12 @@ class ApiService {
     final response = await httpGet('tasks?page=$pageKey&limit=$tasksPerPage');
     if (response.statusCode == 200) {
       List<dynamic> jsonResponse = jsonDecode(response.body);
-      return jsonResponse.map((task) => Task.fromJson(task)).toList();
+      return jsonResponse.map((task) {
+        if (task['rewards'] != null && task['rewards'] is Map) {
+          task['rewards'] = RewardInfo.fromJson(task['rewards']);
+        }
+        return Task.fromJson(task);
+      }).toList();
     }
     return [];
   }
@@ -379,7 +398,11 @@ class ApiService {
     try {
       final response = await httpGet('tasks/$id');
       if (response.statusCode == 200) {
-        return Task.fromJson(jsonDecode(response.body));
+        final task = jsonDecode(response.body);
+        if (task['rewards'] != null && task['rewards'] is Map) {
+          task['rewards'] = RewardInfo.fromJson(task['rewards']);
+        }
+        return Task.fromJson(task);
       } else {
         throw Exception('Failed to load task');
       }
@@ -714,7 +737,7 @@ class ApiService {
   }
 
   /// Extracts task templates from the provided media files using AI.
-  Future<List<TaskTemplate>> extractAiTasks({
+  Future<List<TaskTemplate>> extractTasksByAIAgents({
     List<File>? images,
     String? voicePath,
   }) async {
@@ -776,6 +799,9 @@ class ApiService {
           data['expectedCompletionTimeInMinutes'] ??= 30;
 
           try {
+            if (data['rewards'] != null && data['rewards'] is Map) {
+              data['rewards'] = RewardInfo.fromJson(data['rewards']);
+            }
             return TaskTemplate.fromJson(data);
           } catch (e) {
             print('Error parsing AI task: $e');
