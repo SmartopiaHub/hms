@@ -9,14 +9,25 @@ import 'package:smartopia_hms_server/model/database.dart';
 import 'package:smartopia_hms_server/scheduler.dart';
 import 'package:smartopia_hms_shared/shared.dart';
 
+import 'package:smartopia_hms_server/handlers/tasktemplate_handlers.dart';
+
 // GET a user, PUT/PATCH for update, DELETE a user.
 Future<Response> onRequest(RequestContext context, String id) async {
+  switch (id) {
+    case 'import':
+      return importTaskTemplates(context);
+    case 'export':
+      return exportTaskTemplates(context);
+    case 'purge':
+      return purgeTaskTemplates(context);
+  }
+
   // Check if id is a valid integer, if not return 404
   final parsedId = int.tryParse(id);
   if (parsedId == null) {
     return Response(statusCode: HttpStatus.notFound, body: 'Invalid ID format');
   }
-  
+
   return switch (context.request.method) {
     HttpMethod.get => _getTaskTemplate(context, parsedId),
     HttpMethod.put => _updateTaskTemplate(context, parsedId),
@@ -40,42 +51,45 @@ Future<Response> _updateTaskTemplate(RequestContext context, int id) async {
   final body = await context.request.json();
   final jsonBody = body as Map<String, dynamic>;
   if (jsonBody['rewards'] is Map<String, dynamic>) {
-    jsonBody['rewards'] = RewardInfo.fromJson(jsonBody['rewards'] as Map<String, dynamic>);
+    jsonBody['rewards'] =
+        RewardInfo.fromJson(jsonBody['rewards'] as Map<String, dynamic>);
   }
   final template = TaskTemplate.fromJson(jsonBody);
 
   //TODO: check assigned users and creator
 
   final companion = TaskTemplatesCompanion.insert(
-      id: Value(id), // Use the provided ID for the update
-      title: template.title,
-      description: Value(template.description),
-      tags: Value<List<String>?>(template.tags),
-      assignedUsers: template.assignedUsers,
-      creator: template.creator,
-      recurrence: template.recurrence,
-      remind: Value(template.remind),
-      expectedCompletionTimeInMinutes: template.expectedCompletionTimeInMinutes,
-      priority: Value(template.priority),
-      rewards: Value(template.rewards),
-      penalty: Value(template.penalty),
-      attachmentRequired: Value(template.attachmentRequired),
-      submissionRequired: Value(template.submissionRequired),
-      creationTime: DateTime.now(),
-      notificationSetting: Value(template.notificationSetting),
-    );
+    id: Value(id), // Use the provided ID for the update
+    title: template.title,
+    description: Value(template.description),
+    tags: Value<List<String>?>(template.tags),
+    assignedUsers: template.assignedUsers,
+    creator: template.creator,
+    recurrence: template.recurrence,
+    remind: Value(template.remind),
+    expectedCompletionTimeInMinutes: template.expectedCompletionTimeInMinutes,
+    priority: Value(template.priority),
+    rewards: Value(template.rewards),
+    penalty: Value(template.penalty),
+    attachmentRequired: Value(template.attachmentRequired),
+    submissionRequired: Value(template.submissionRequired),
+    creationTime: DateTime.now(),
+    notificationSetting: Value(template.notificationSetting),
+  );
 
   // Update the task template
-  final updated = await database.update(database.taskTemplates).replace(companion);
-  
+  final updated =
+      await database.update(database.taskTemplates).replace(companion);
+
   if (!updated) {
     return Response(statusCode: HttpStatus.notFound);
   }
-  final tpl = await database.managers.taskTemplates.filter((t) => t.id.equals(id)).getSingle();
+  final tpl = await database.managers.taskTemplates
+      .filter((t) => t.id.equals(id))
+      .getSingle();
   scheduleNextInstance(tpl);
   return Response();
 }
-
 
 Future<Response> _deleteTaskTemplate(RequestContext context, int id) async {
   final deletedCount = await (database.delete(database.taskTemplates)
@@ -85,7 +99,7 @@ Future<Response> _deleteTaskTemplate(RequestContext context, int id) async {
   if (deletedCount == 0) {
     return Response(statusCode: HttpStatus.notFound);
   }
-  
+
   cancelScheduledInstance(id);
   return Response();
 }

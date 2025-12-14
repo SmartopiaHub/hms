@@ -13,7 +13,8 @@ import 'package:go_router/go_router.dart';
 class CreateOrEditTaskPage extends StatefulWidget {
   final int? taskId;
   final TaskTemplate? taskTemplate;
-  const CreateOrEditTaskPage({super.key, this.taskId, this.taskTemplate});
+  final bool returnOnSubmit;
+  const CreateOrEditTaskPage({super.key, this.taskId, this.taskTemplate, this.returnOnSubmit = false});
 
   @override
   State<CreateOrEditTaskPage> createState() => _CreateOrEditTaskPageState();
@@ -44,6 +45,10 @@ class _CreateOrEditTaskPageState extends PageBaseState<CreateOrEditTaskPage> {
           initial: widget.taskTemplate,
             fetchChildList: () => apiService.getChildList(),
             onSubmit: (template) async {
+              if (widget.returnOnSubmit) {
+                GoRouter.of(context).pop(template);
+                return;
+              }
               try{
                 if (template.id >= 0){
                   await apiService.updateTaskTemplate(template);

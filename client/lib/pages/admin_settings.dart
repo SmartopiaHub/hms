@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../api.dart';
 import '../config.dart';
@@ -31,7 +32,10 @@ class _AdminSettingsPageState extends State<AdminSettingsPage> {
   @override
   void initState() {
     super.initState();
-    _loadConfig();
+    // Defer loading config until after first frame to avoid setState during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadConfig();
+    });
   }
 
   Future<void> _loadConfig() async {
@@ -50,9 +54,9 @@ class _AdminSettingsPageState extends State<AdminSettingsPage> {
 
       if (success && mounted) {
         showInfoNotification(
-          value 
-            ? localizations.pointSystemEnabled 
-            : localizations.pointSystemDisabled,
+          value
+              ? localizations.pointSystemEnabled
+              : localizations.pointSystemDisabled,
           context: context,
         );
       } else if (mounted) {
@@ -418,7 +422,6 @@ class _AdminSettingsPageState extends State<AdminSettingsPage> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     final isAuthenticated = context.read<AuthProvider>().isAuthenticated;
@@ -444,7 +447,32 @@ class _AdminSettingsPageState extends State<AdminSettingsPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 16),
-              
+
+              buildCard(
+                context,
+                blur: 20,
+                padding: const EdgeInsets.all(16),
+                borderRadius: BorderRadius.circular(16),
+                color: Colors.white.withAlpha(50),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      buildElevatedButton(
+                        context: context,
+                        label: "AI API Settings",
+                        icon: Icons.smart_button,
+                        onPressed: () {
+                          GoRouter.of(context).go('/admin/ai-settings');
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
               // Point System Toggle
               buildCard(
                 context,
@@ -476,9 +504,9 @@ class _AdminSettingsPageState extends State<AdminSettingsPage> {
                       const SizedBox(height: 8),
                       Text(
                         localizations.pointSystemDescription,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.white70,
-                        ),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
                       ),
                       const SizedBox(height: 16),
                       Consumer<AppConfig>(
@@ -487,9 +515,9 @@ class _AdminSettingsPageState extends State<AdminSettingsPage> {
                             value: configProvider.pointSystemEnabled,
                             onChanged: _isLoading ? null : _togglePointSystem,
                             title: Text(
-                              configProvider.pointSystemEnabled 
-                                ? localizations.pointSystemEnabled
-                                : localizations.pointSystemDisabled,
+                              configProvider.pointSystemEnabled
+                                  ? localizations.pointSystemEnabled
+                                  : localizations.pointSystemDisabled,
                             ),
                             contentPadding: EdgeInsets.zero,
                           );
@@ -499,13 +527,12 @@ class _AdminSettingsPageState extends State<AdminSettingsPage> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 24),
               if (context.read<AppConfig>().pointSystemEnabled) ...[
                 PointSystemSettingsWidget(),
                 const SizedBox(height: 24),
               ],
-              
 
               // Task Templates Section
               buildCard(

@@ -2,7 +2,10 @@
 // Licensed under the GNU General Public License v3.0 (GPL-3.0).
 // See https://www.gnu.org/licenses/gpl-3.0.html for details.
 
+import 'package:flutter/foundation.dart';
+
 import '../authenticator.dart';
+import '../logger.dart';
 import '../notification.dart';
 import 'base.dart';
 import '../widgets/task_item.dart';
@@ -12,7 +15,9 @@ import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:provider/provider.dart';
 import '../api.dart';
 import '../model/database.dart';
-
+import '../widgets/task_creation_options.dart';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 
 /// A generic task list page that loads pages of tasks with infinite scroll.
 class TastTemplateListPage extends StatefulWidget {
@@ -28,21 +33,21 @@ class TastTemplateListPage extends StatefulWidget {
 class _TastTemplateListPageState extends PageBaseState<TastTemplateListPage> {
   static const _pageSize = 5;
 
-  
   final PagingController<int, TaskTemplate> _templatePagingController =
       PagingController(
-        getNextPageKey: (state){
+        getNextPageKey: (state) {
           if (state.pages != null && state.pages!.isNotEmpty) {
             if (state.pages!.last.length < _pageSize) {
               return null;
             }
-          } 
+          }
           return (state.keys?.last ?? 0) + 1;
         },
-        fetchPage: (pageKey) async => await apiService.fetchTaskTemplates(
-          pageKey: pageKey,
-          tasksPerPage: _pageSize,
-        ),
+        fetchPage:
+            (pageKey) async => await apiService.fetchTaskTemplates(
+              pageKey: pageKey,
+              tasksPerPage: _pageSize,
+            ),
       );
 
   @override
@@ -62,60 +67,87 @@ class _TastTemplateListPageState extends PageBaseState<TastTemplateListPage> {
     return auth.isParent || template.creator == auth.username;
   }
 
-  Widget _buildTemplateList(BuildContext context){
+  Widget _buildTemplateList(BuildContext context) {
     final templateList = PagingListener(
-        controller: _templatePagingController,
-        builder: (context, state, fetchNextPage) => PagedListView<int, TaskTemplate>(
-          state: state,
-          shrinkWrap: true,
-          physics: NeverScrollableScrollPhysics(),
-          fetchNextPage: fetchNextPage,
-          builderDelegate: PagedChildBuilderDelegate(
-            itemBuilder: (context, item, index) => TaskTemplateItem(
-              template: item,
-              onEdit: !_canEdit(item) ? null : () async {
-                final didChange = await GoRouter.of(context).pushNamed<bool>('taskEdit', pathParameters: {'id': item.id.toString()}, extra: item);
-                if (didChange!= null && didChange) {
-                  _templatePagingController.refresh();
-                }
-              },
-              onDelete: !_canDelete(item) ? null : () {
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: Text(localizations.taskDelete),
-                    content: Text(localizations.taskDeleteConfirmation),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: Text(localizations.cancel),
-                      ),
-                      TextButton(
-                        onPressed: () async {
-                          try {
-                            await apiService.deleteTaskTemplate(item.id);
-                            _templatePagingController.refresh();
-                            if (context.mounted) context.pop();
-                          } catch (e) {
-                            if (context.mounted) {
-                              showErrorNotification(localizations.taskDeleteError, context: context);
-                            }
-                          }
-                        },
-                        child: Text(localizations.delete),
-                      ),
-                    ],
+      controller: _templatePagingController,
+      builder:
+          (context, state, fetchNextPage) => PagedListView<int, TaskTemplate>(
+            state: state,
+            shrinkWrap: true,
+            physics: NeverScrollableScrollPhysics(),
+            fetchNextPage: fetchNextPage,
+            builderDelegate: PagedChildBuilderDelegate(
+              itemBuilder:
+                  (context, item, index) => TaskTemplateItem(
+                    template: item,
+                    onEdit:
+                        !_canEdit(item)
+                            ? null
+                            : () async {
+                              final didChange = await GoRouter.of(
+                                context,
+                              ).pushNamed<bool>(
+                                'taskEdit',
+                                pathParameters: {'id': item.id.toString()},
+                                extra: item,
+                              );
+                              if (didChange != null && didChange) {
+                                _templatePagingController.refresh();
+                              }
+                            },
+                    onDelete:
+                        !_canDelete(item)
+                            ? null
+                            : () {
+                              showDialog(
+                                context: context,
+                                builder:
+                                    (context) => AlertDialog(
+                                      title: Text(localizations.taskDelete),
+                                      content: Text(
+                                        localizations.taskDeleteConfirmation,
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed:
+                                              () => Navigator.of(context).pop(),
+                                          child: Text(localizations.cancel),
+                                        ),
+                                        TextButton(
+                                          onPressed: () async {
+                                            try {
+                                              await apiService
+                                                  .deleteTaskTemplate(item.id);
+                                              _templatePagingController
+                                                  .refresh();
+                                              if (context.mounted)
+                                                context.pop();
+                                            } catch (e) {
+                                              if (context.mounted) {
+                                                showErrorNotification(
+                                                  localizations.taskDeleteError,
+                                                  context: context,
+                                                );
+                                              }
+                                            }
+                                          },
+                                          child: Text(localizations.delete),
+                                        ),
+                                      ],
+                                    ),
+                              );
+                            },
                   ),
-                );
-              },
+              noItemsFoundIndicatorBuilder:
+                  (_) => Center(child: Text(localizations.noTasks)),
+              firstPageProgressIndicatorBuilder:
+                  (_) => const Center(child: CircularProgressIndicator()),
+              newPageProgressIndicatorBuilder:
+                  (_) => const Center(child: CircularProgressIndicator()),
+              //noMoreItemsIndicatorBuilder: (_) => const Center(child: Text('No more task templates')),
             ),
-            noItemsFoundIndicatorBuilder: (_) => Center(child: Text(localizations.noTasks)),
-            firstPageProgressIndicatorBuilder: (_) => const Center(child: CircularProgressIndicator()),
-            newPageProgressIndicatorBuilder: (_) => const Center(child: CircularProgressIndicator()),
-            //noMoreItemsIndicatorBuilder: (_) => const Center(child: Text('No more task templates')),
           ),
-        ),
-      );
+    );
 
     return templateList;
   }
@@ -130,14 +162,105 @@ class _TastTemplateListPageState extends PageBaseState<TastTemplateListPage> {
 
   @override
   Widget? buildFloatingActionButton(BuildContext context) {
-    return (!isParent && !allowSelfHomeworkManagement) ? null : FloatingActionButton(
-        onPressed:  () async {
-          final didChange = await GoRouter.of(context).pushNamed<bool>('taskCreate');
-          if (didChange != null && didChange) {
-            _templatePagingController.refresh();
-          }
-        },
-        child: const Icon(Icons.add),
-      ); 
+    return (!isParent && !allowSelfHomeworkManagement)
+        ? null
+        : FloatingActionButton(
+          onPressed: () async {
+            if (!Platform.isAndroid && !Platform.isIOS && !kIsWeb) {
+              // For desktop, maybe just manual or file upload?
+              // The requirement says "prompt user to four options".
+              // Let's show the options dialog.
+            }
+
+            final result = await showModalBottomSheet(
+              context: context,
+              builder: (context) => const TaskCreationOptions(),
+              isScrollControlled: true,
+            );
+
+            if (result != null && result is Map) {
+              if (result['type'] == 'manual') {
+                if (context.mounted) {
+                  final didChange = await GoRouter.of(
+                    context,
+                  ).pushNamed<bool>('taskCreate');
+                  if (didChange != null && didChange) {
+                    _templatePagingController.refresh();
+                  }
+                }
+              } else {
+                // Handle AI extraction
+                if (context.mounted) {
+                  // Show loading
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder:
+                        (context) =>
+                            const Center(child: CircularProgressIndicator()),
+                  );
+
+                  try {
+                    List<TaskTemplate> templates = [];
+                    if (result['type'] == 'voice') {
+                      templates = await apiService.extractAiTasks(
+                        voicePath: result['path'],
+                      );
+                    } else {
+                      List<File> files = [];
+                      if (result['files'] != null) {
+                        for (var f in result['files']) {
+                          if (f is PlatformFile) {
+                            // FilePicker result
+                            if (f.path != null) files.add(File(f.path!));
+                          } else {
+                            // XFile from ImagePicker
+                            files.add(File(f.path));
+                          }
+                        }
+                      }
+                      templates = await apiService.extractAiTasks(
+                        images: files,
+                      );
+                    }
+
+                    if (context.mounted) {
+                      Navigator.of(context, rootNavigator: true).pop(); // Close loading dialog
+
+                      if (templates.isNotEmpty) {
+                        final didChange = await GoRouter.of(
+                          context,
+                        ).pushNamed<bool>('taskReview', extra: templates);
+                        if (didChange == true) {
+                          _templatePagingController.refresh();
+                        }
+                      } else {
+                        showErrorNotification(
+                          localizations.noTasks,
+                          context: context,
+                        );
+                      }
+                    }
+                  } catch (e) {
+                    logError(e.toString());
+                    if (context.mounted) {
+                      // Schedule pop to avoid locked assertion if happening during build/layout
+                      Future.microtask(() {
+                        if (context.mounted) {
+                          Navigator.pop(context); // Close loading
+                          showErrorNotification(
+                            'Failed to extract: $e',
+                            context: context,
+                          );
+                        }
+                      });
+                    }
+                  }
+                }
+              }
+            }
+          },
+          child: const Icon(Icons.add),
+        );
   }
 }

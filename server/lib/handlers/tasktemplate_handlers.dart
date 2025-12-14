@@ -4,53 +4,53 @@
 
 import 'dart:io';
 import 'package:dart_frog/dart_frog.dart';
-import 'package:smartopia_hms_server/model/database.dart';
 import 'package:drift/drift.dart';
+import 'package:smartopia_hms_server/model/database.dart';
 import 'package:smartopia_hms_shared/shared.dart';
 
-Future<Response> onRequest(RequestContext context) async {
-  return switch (context.request.method) {
-    HttpMethod.post => _importTaskTemplates(context),
-    _ => Future.value(
-        Response(statusCode: HttpStatus.methodNotAllowed),
-      ),
-  };
-}
+// --- IMPORT ---
 
-Future<Response> _importTaskTemplates(RequestContext context) async {
+Future<Response> importTaskTemplates(RequestContext context) async {
+  if (context.request.method != HttpMethod.post) {
+    return Response(statusCode: HttpStatus.methodNotAllowed);
+  }
+
   final user = context.read<User>();
   if (!user.isParent) {
-    return Response(statusCode: HttpStatus.forbidden, body: 'Only parents can import task templates');
+    return Response(
+        statusCode: HttpStatus.forbidden,
+        body: 'Only parents can import task templates');
   }
 
   try {
     final body = await context.request.json() as Map<String, dynamic>;
     final templatesList = body['templates'] as List;
-    
+
     var importedCount = 0;
     final duplicates = <Map<String, dynamic>>[];
-    
+
     for (final templateJson in templatesList) {
       try {
         final jsonBody = templateJson as Map<String, dynamic>;
         if (jsonBody['rewards'] is Map<String, dynamic>) {
-          jsonBody['rewards'] = RewardInfo.fromJson(jsonBody['rewards'] as Map<String, dynamic>);
+          jsonBody['rewards'] =
+              RewardInfo.fromJson(jsonBody['rewards'] as Map<String, dynamic>);
         }
         final template = TaskTemplate.fromJson(jsonBody);
-        
+
         // Check for duplicates based on title and assignedUsers
         final existingTemplates = await (database.select(database.taskTemplates)
-          ..where((t) => t.title.equals(template.title)))
-          .get();
-        
+              ..where((t) => t.title.equals(template.title)))
+            .get();
+
         // Check if any existing template has the same assigned users
         final isDuplicate = existingTemplates.any((existing) {
           final existingUsers = existing.assignedUsers.toSet();
           final newUsers = template.assignedUsers.toSet();
-          return existingUsers.difference(newUsers).isEmpty && 
-                 newUsers.difference(existingUsers).isEmpty;
+          return existingUsers.difference(newUsers).isEmpty &&
+              newUsers.difference(existingUsers).isEmpty;
         });
-        
+
         if (isDuplicate) {
           // Duplicate found, add to list
           duplicates.add({
@@ -59,7 +59,7 @@ Future<Response> _importTaskTemplates(RequestContext context) async {
           });
           continue;
         }
-        
+
         // Create new template companion from parsed object
         final companion = TaskTemplatesCompanion.insert(
           title: template.title,
@@ -67,7 +67,8 @@ Future<Response> _importTaskTemplates(RequestContext context) async {
           assignedUsers: template.assignedUsers,
           recurrence: template.recurrence,
           creationTime: DateTime.now(),
-          expectedCompletionTimeInMinutes: template.expectedCompletionTimeInMinutes,
+          expectedCompletionTimeInMinutes:
+              template.expectedCompletionTimeInMinutes,
           tags: Value(template.tags),
           priority: Value(template.priority),
           remind: Value(template.remind),
@@ -78,7 +79,7 @@ Future<Response> _importTaskTemplates(RequestContext context) async {
           submissionRequired: Value(template.submissionRequired),
           notificationSetting: Value(template.notificationSetting),
         );
-        
+
         await database.into(database.taskTemplates).insert(companion);
         importedCount++;
       } catch (e) {
@@ -86,13 +87,67 @@ Future<Response> _importTaskTemplates(RequestContext context) async {
         continue;
       }
     }
-    
+
     return Response.json(body: {
-      'success': true, 
+      'success': true,
       'importedCount': importedCount,
       'duplicates': duplicates,
     });
   } catch (e) {
-    return Response(statusCode: HttpStatus.internalServerError, body: 'Failed to import task templates: $e');
+    return Response(
+        statusCode: HttpStatus.internalServerError,
+        body: 'Failed to import task templates: $e');
+  }
+}
+
+// --- EXPORT ---
+
+Future<Response> exportTaskTemplates(RequestContext context) async {
+  if (context.request.method != HttpMethod.get) {
+    return Response(statusCode: HttpStatus.methodNotAllowed);
+  }
+
+  final user = context.read<User>();
+  if (!user.isParent) {
+    return Response(
+        statusCode: HttpStatus.forbidden,
+        body: 'Only parents can export task templates');
+  }
+
+  try {
+    final templates = await database.select(database.taskTemplates).get();
+    final jsonList = templates.map((t) => t.toJson()).toList();
+
+    return Response.json(body: jsonList);
+  } catch (e) {
+    return Response(
+        statusCode: HttpStatus.internalServerError,
+        body: 'Failed to export task templates: $e');
+  }
+}
+
+// --- PURGE ---
+
+Future<Response> purgeTaskTemplates(RequestContext context) async {
+  if (context.request.method != HttpMethod.post) {
+    return Response(statusCode: HttpStatus.methodNotAllowed);
+  }
+
+  final user = context.read<User>();
+  if (!user.isParent) {
+    return Response(
+        statusCode: HttpStatus.forbidden,
+        body: 'Only parents can purge task templates');
+  }
+
+  try {
+    // Delete all task templates
+    final count = await database.delete(database.taskTemplates).go();
+
+    return Response.json(body: {'success': true, 'deletedCount': count});
+  } catch (e) {
+    return Response(
+        statusCode: HttpStatus.internalServerError,
+        body: 'Failed to purge task templates: $e');
   }
 }

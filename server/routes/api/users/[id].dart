@@ -8,9 +8,22 @@ import 'package:drift/drift.dart';
 import 'package:smartopia_hms_server/authenticator.dart';
 import 'package:smartopia_hms_server/model/database.dart';
 
+import 'package:smartopia_hms_server/handlers/user_handlers.dart';
+
 // GET a user, PUT/PATCH for update, DELETE a user.
 Future<Response> onRequest(RequestContext context, String id) async {
-  return switch(context.request.method) {
+  switch (id) {
+    case 'points':
+      return getPoints(context);
+    case 'point-system':
+      return pointSystemHandler(context);
+    case 'password':
+      return changePassword(context);
+    case 'notification-settings':
+      return notificationSettingsHandler(context);
+  }
+
+  return switch (context.request.method) {
     HttpMethod.get => _getUser(context, int.parse(id)),
     HttpMethod.put => _updateUser(context, id),
     HttpMethod.delete => _deleteUser(context, id),
@@ -19,11 +32,10 @@ Future<Response> onRequest(RequestContext context, String id) async {
 }
 
 Future<Response> _getUser(RequestContext context, int id) async {
-
   final user = await (database.select(database.users)
-    ..where((u) => u.id.equals(id)))
+        ..where((u) => u.id.equals(id)))
       .getSingleOrNull();
-  
+
   if (user == null) {
     return Response(statusCode: HttpStatus.notFound);
   }
@@ -31,18 +43,18 @@ Future<Response> _getUser(RequestContext context, int id) async {
 }
 
 Future<Response> _updateUser(RequestContext context, String userId) async {
-  try{
+  try {
     final body = await context.request.json();
     final jsonBody = body as Map<String, dynamic>;
-    
 
     // Validate and create a User from the request body.
     final nickname = jsonBody['nickname'] as String?;
     final isParent = jsonBody['isParent'] as bool?;
     final password = jsonBody['password'] as String?;
     final username = jsonBody['username'] as String?;
-    final allowSelfHomeworkManagement = jsonBody['allowSelfHomeworkManagement'] as bool?;
-    
+    final allowSelfHomeworkManagement =
+        jsonBody['allowSelfHomeworkManagement'] as bool?;
+
     if (username == null || username.isEmpty) {
       return Response.json(
         statusCode: HttpStatus.badRequest,
@@ -58,9 +70,9 @@ Future<Response> _updateUser(RequestContext context, String userId) async {
         statusCode: HttpStatus.notFound,
         body: {'error': 'User not found'},
       );
-    }    
+    }
     final id = user.id;
-    
+
     if (isParent == null) {
       return Response.json(
         statusCode: HttpStatus.badRequest,
@@ -75,8 +87,8 @@ Future<Response> _updateUser(RequestContext context, String userId) async {
       companion = UsersCompanion(
         nickname: Value(nickname),
         isParent: Value(isParent),
-        allowSelfHomeworkManagement: allowSelfHomeworkManagement == null 
-            ? const Value<bool>.absent() 
+        allowSelfHomeworkManagement: allowSelfHomeworkManagement == null
+            ? const Value<bool>.absent()
             : Value(allowSelfHomeworkManagement),
         password: Value(hashed),
       );
@@ -85,8 +97,8 @@ Future<Response> _updateUser(RequestContext context, String userId) async {
       companion = UsersCompanion(
         nickname: Value(nickname),
         isParent: Value(isParent),
-        allowSelfHomeworkManagement: allowSelfHomeworkManagement == null 
-            ? const Value<bool>.absent() 
+        allowSelfHomeworkManagement: allowSelfHomeworkManagement == null
+            ? const Value<bool>.absent()
             : Value(allowSelfHomeworkManagement),
       );
     }
@@ -111,7 +123,6 @@ Future<Response> _updateUser(RequestContext context, String userId) async {
       body: {'error': 'Invalid request body: $e'},
     );
   }
-  
 }
 
 Future<Response> _deleteUser(RequestContext context, String id) async {
@@ -142,11 +153,11 @@ Future<Response> _deleteUser(RequestContext context, String id) async {
     );
   }
 
-  if (!user.isParent){
+  if (!user.isParent) {
     final childrens = await (database.select(database.users)
           ..where((u) => u.isParent.equals(false)))
         .get();
-    if (childrens.length <=1) {
+    if (childrens.length <= 1) {
       return Response.json(
         statusCode: HttpStatus.forbidden,
         body: {'error': 'You cannot delete the last child user'},
@@ -189,4 +200,3 @@ Future<Response> _deleteUser(RequestContext context, String id) async {
     );
   }
 }
-

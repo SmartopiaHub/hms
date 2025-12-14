@@ -5,25 +5,36 @@
 import 'dart:io';
 import 'package:dart_frog/dart_frog.dart';
 
+import 'package:smartopia_hms_server/handlers/client_handlers.dart';
+
 Future<Response> onRequest(RequestContext context, String filename) async {
+  if (filename == 'windows') return latestWindows(context);
+  if (filename == 'macos') return latestMacos(context);
+  if (filename == 'android') return latestAndroid(context);
+
   if (context.request.method != HttpMethod.get) {
     return Response(statusCode: HttpStatus.methodNotAllowed);
   }
 
   try {
     // Validate filename format to prevent directory traversal
-    if (filename.contains('..') || filename.contains('/') || filename.contains('\\')) {
-      return Response(statusCode: HttpStatus.badRequest, body: 'Invalid filename');
+    if (filename.contains('..') ||
+        filename.contains('/') ||
+        filename.contains('\\')) {
+      return Response(
+          statusCode: HttpStatus.badRequest, body: 'Invalid filename');
     }
 
     // Check if filename matches expected pattern
-    final validPattern = RegExp(r'^smartopia_learning_(android|macos|windows)_\d+\.\d+\.\d+\.(apk|dmg|zip)$');
+    final validPattern = RegExp(
+        r'^smartopia_learning_(android|macos|windows)_\d+\.\d+\.\d+\.(apk|dmg|zip)$');
     if (!validPattern.hasMatch(filename)) {
-      return Response(statusCode: HttpStatus.badRequest, body: 'Invalid filename format');
+      return Response(
+          statusCode: HttpStatus.badRequest, body: 'Invalid filename format');
     }
 
     final file = File('data/clients/$filename');
-    
+
     if (!file.existsSync()) {
       return Response(statusCode: HttpStatus.notFound, body: 'File not found');
     }
@@ -41,7 +52,7 @@ Future<Response> onRequest(RequestContext context, String filename) async {
     }
 
     final bytes = await file.readAsBytes();
-    
+
     return Response.bytes(
       body: bytes,
       headers: {
@@ -51,6 +62,7 @@ Future<Response> onRequest(RequestContext context, String filename) async {
       },
     );
   } catch (e) {
-    return Response(statusCode: HttpStatus.internalServerError, body: 'Error: $e');
+    return Response(
+        statusCode: HttpStatus.internalServerError, body: 'Error: $e');
   }
 }

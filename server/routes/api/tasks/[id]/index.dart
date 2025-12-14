@@ -5,15 +5,30 @@
 import 'dart:io';
 import 'package:dart_frog/dart_frog.dart';
 import 'package:smartopia_hms_server/model/database.dart';
+import 'package:smartopia_hms_server/handlers/task_handlers.dart';
 
 // GET a user, PUT/PATCH for update, DELETE a user.
 Future<Response> onRequest(RequestContext context, String id) async {
+  // Check for static routes that conflict with [id]
+  switch (id) {
+    case 'search':
+      return searchTasks(context);
+    case 'cancel':
+      return cancelTask(context);
+    case 'import':
+      return importTasks(context);
+    case 'export':
+      return exportTasks(context);
+    case 'purge':
+      return purgeTasks(context);
+  }
+
   // Check if id is a valid integer, if not return 404
   final parsedId = int.tryParse(id);
   if (parsedId == null) {
     return Response(statusCode: HttpStatus.notFound, body: 'Invalid ID format');
   }
-  
+
   return switch (context.request.method) {
     HttpMethod.get => _getTask(context, parsedId),
     //HttpMethod.put => _updateTaskTemplate(context, parsedId),
@@ -33,8 +48,6 @@ Future<Response> _getTask(RequestContext context, int id) async {
   return Response.json(body: task.toJson());
 }
 
-
-
 Future<Response> _deleteTask(RequestContext context, int id) async {
   final deletedCount = await (database.delete(database.tasks)
         ..where((t) => t.id.equals(id)))
@@ -43,6 +56,6 @@ Future<Response> _deleteTask(RequestContext context, int id) async {
   if (deletedCount == 0) {
     return Response(statusCode: HttpStatus.notFound);
   }
-  
+
   return Response();
 }
