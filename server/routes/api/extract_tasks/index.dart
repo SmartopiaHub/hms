@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:dart_frog/dart_frog.dart';
@@ -47,11 +48,27 @@ Future<Response> onRequest(RequestContext context) async {
       }
     }
 
+    // for testing
+    if (File('data/test_tasks.json').existsSync()) {
+      return Response.json(
+        body: jsonDecode(File('data/test_tasks.json').readAsStringSync()),
+      );
+    }
+
     final tasks = await aiService.extractTasks(
       images: tempImages,
       voice: tempVoice,
       pdf: tempPdf,
     );
+
+    if (tasks == null) {
+      return Response.json(
+        statusCode: HttpStatus.internalServerError,
+        body: {'error': 'Failed to extract tasks'},
+      );
+    }
+
+    File('data/test_tasks.json').writeAsStringSync(jsonEncode(tasks));
 
     // Clean up
     for (final f in tempImages) {

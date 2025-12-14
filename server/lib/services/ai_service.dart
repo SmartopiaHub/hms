@@ -1,13 +1,65 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:dart_openai/dart_openai.dart';
 import 'package:http/http.dart' as http;
+import 'package:smartopia_hms_server/logger.dart';
 
 import 'ai_config_service.dart';
 
 /// Service to handle AI task extraction using OpenAI and Gemini
 /// Updated to use OpenAI Responses API with StructuredOutputs
 class AiService {
-  static const String defaultSystemPrompt = '''
+  static bool _isInitialized = false;
+
+  /// Initialize AI service
+  static Future<bool> init() async {
+    if (_isInitialized) return true;
+    final config = await AiConfigService().getConfig();
+    if (config == null) {
+      logInfo(
+          'AI configuration not found. Please configure AI settings first.');
+      return false;
+    }
+    if (config.provider.toLowerCase() == 'openai') {
+      if (config.openaiApiKey == null || config.openaiApiKey!.isEmpty) {
+        logInfo(
+            'OpenAI API key not configured. Please configure AI settings first.');
+        return false;
+      }
+      OpenAI.apiKey = config.openaiApiKey!;
+      OpenAI.showLogs = true;
+    } else if (config.provider.toLowerCase() == 'gemini') {
+      if (config.geminiApiKey == null || config.geminiApiKey!.isEmpty) {
+        logInfo(
+            'Gemini API key not configured. Please configure AI settings first.');
+        return false;
+      }
+      // TODO: implement Gemini
+    }
+    _isInitialized = true;
+    return true;
+  }
+
+  /// Upload PDF to OpenAI and return file ID
+  Future<String?> _uploadPdfAndGetFileId(String pdfPath,
+      [String purpose = 'user_data']) async {
+    try {
+      await init();
+      final file = await OpenAI.instance.file.upload(
+        file: File(pdfPath),
+        purpose: purpose,
+      );
+
+      return file.id;
+    } catch (e, st) {
+      logError('Failed to upload PDF to OpenAI: $e', e, st);
+      return null;
+    }
+  }
+
+  static const String _defaultOpenAIModel = 'gpt-5.2';
+
+  static const String _defaultSystemPrompt = '''
 You are a task extraction assistant. Analyze the provided content (images, PDFs, or transcribed audio) and extract actionable tasks.
 
 Extract each task with the following fields:
@@ -23,198 +75,67 @@ Return tasks as a structured JSON array.
 
   /// JSON Schema for structured output
   static final Map<String, dynamic> taskSchema = {
-    "type": "object",
-    "properties": {
-      "tasks": {
-        "type": "array",
-        "items": {
-          "type": "object",
-          "properties": {
-            "title": {"type": "string"},
-            "description": {"type": "string"},
-            "priority": {"type": "integer", "minimum": 1, "maximum": 5},
-            "expectedCompletionTimeInMinutes": {
-              "type": "integer",
-              "minimum": 1
+    'type': 'object',
+    'properties': {
+      'tasks': {
+        'type': 'array',
+        'items': {
+          'type': 'object',
+          'properties': {
+            'title': {'type': 'string'},
+            'description': {'type': 'string'},
+            'priority': {'type': 'integer', 'minimum': 1, 'maximum': 5},
+            'expectedCompletionTimeInMinutes': {
+              'type': 'integer',
+              'minimum': 1
             },
-            "rewards": {
-              "type": "object",
-              "properties": {
-                "maxPoints": {"type": "integer"}
+            'rewards': {
+              'type': 'object',
+              'properties': {
+                'maxPoints': {'type': 'integer'}
               },
-              "additionalProperties": false // ✅ REQUIRED in strict mode
+              'additionalProperties': false // ✅ REQUIRED in strict mode
             },
-            "penalty": {"type": "string"}
+            'penalty': {'type': 'string'}
           },
-          "required": ["title"],
-          "additionalProperties": false
+          'required': ['title'],
+          'additionalProperties': false
         }
       }
     },
-    "required": ["tasks"],
-    "additionalProperties": false
+    'required': ['tasks'],
+    'additionalProperties': false
   };
 
-  /// Extracts tasks from media files using configured AI provider
-  Future<List<Map<String, dynamic>>> extractTasks({
-    List<File>? images,
-    File? voice,
-    File? pdf,
+  /// Extracts tasks from a PDF file using OpenAI's Responses API
+  /// Return [] if no tasks are extracted
+  /// Return null if failed to extract tasks
+  Future<List<Map<String, dynamic>>?> extractTasksFromPdf({
+    required String fileId,
+    required Map<String, dynamic> taskSchema,
   }) async {
-    final config = await aiConfigService.getConfig();
-
-    if (config == null) {
-      throw Exception(
-          'AI configuration not found. Please configure AI settings first.');
-    }
-
-    switch (config.provider.toLowerCase()) {
-      case 'openai':
-        return await _extractWithOpenAI(
-          config,
-          images: images,
-          voice: voice,
-          pdf: pdf,
-        );
-      case 'gemini':
-        return await _extractWithGemini(
-          config,
-          images: images,
-          voice: voice,
-          pdf: pdf,
-        );
-      default:
-        throw Exception('Unsupported AI provider: ${config.provider}');
-    }
-  }
-
-  /// Extract tasks using OpenAI Responses API with Structured Outputs
-  Future<List<Map<String, dynamic>>> _extractWithOpenAI(
-    AiConfig config, {
-    List<File>? images,
-    File? voice,
-    File? pdf,
-  }) async {
-    if (config.openaiApiKey == null || config.openaiApiKey!.isEmpty) {
-      throw Exception('OpenAI API key not configured');
-    }
-
-    final List<String> textPrompts = [];
-
-    // Process voice with Whisper
-    if (voice != null) {
-      final transcription =
-          await _transcribeWithWhisper(config.openaiApiKey!, voice);
-      textPrompts.add('Audio transcription: $transcription');
-    }
-
-    // Build content for Responses API
-    final List<Map<String, dynamic>> content = [];
-
-    // Add system prompt
-    final prompt = textPrompts.isNotEmpty
-        ? '${config.systemPrompt ?? defaultSystemPrompt}\n\nAdditional context: ${textPrompts.join('\n')}'
-        : config.systemPrompt ?? defaultSystemPrompt;
-
-    content.add({'type': 'input_text', 'text': prompt});
-
-    // Add images as base64
-    if (images != null && images.isNotEmpty) {
-      for (final image in images) {
-        final bytes = await image.readAsBytes();
-        final base64Image = base64Encode(bytes);
-        content.add({
-          'type': 'image_url',
-          'image_url': {
-            'url': 'data:image/jpeg;base64,$base64Image',
-          }
-        });
-      }
-    }
-
-    // Upload PDF using Files API and reference by ID
-    String? fileId;
-    if (pdf != null) {
-      fileId = await _uploadFileToOpenAI(config.openaiApiKey!, pdf);
-      content.add({
-        'type': 'input_file',
-        'file_id': fileId,
-      });
-    }
-
     try {
-      // Use chat/completions (not responses) for vision with files
-      final response = await _callChatCompletionsWithFiles(
-        config.openaiApiKey!,
-        content,
-        model: config.model ?? 'gpt-5.2',
-      );
+      await init();
+      final config = await aiConfigService.getConfig();
+      final input = [
+        {
+          'role': 'user',
+          'content': [
+            {'type': 'input_file', 'file_id': fileId},
+            {
+              'type': 'input_text',
+              'text': config?.systemPrompt ?? _defaultSystemPrompt,
+            }
+          ]
+        }
+      ];
 
-      return response;
-    } finally {
-      // Clean up uploaded file
-      if (fileId != null) {
-        await _deleteFileFromOpenAI(config.openaiApiKey!, fileId);
-      }
-    }
-  }
-
-  /// Upload file to OpenAI Files API
-  Future<String> _uploadFileToOpenAI(String apiKey, File file) async {
-    final url = Uri.parse('https://api.openai.com/v1/files');
-
-    final request = http.MultipartRequest('POST', url)
-      ..headers['Authorization'] = 'Bearer $apiKey'
-      ..fields['purpose'] = 'assistants'
-      ..files.add(await http.MultipartFile.fromPath('file', file.path));
-
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
-
-    if (response.statusCode != 200) {
-      throw Exception(
-          'OpenAI Files API error: ${response.statusCode} - ${response.body}');
-    }
-
-    final jsonResponse = jsonDecode(response.body) as Map<String, dynamic>;
-    return jsonResponse['id'] as String;
-  }
-
-  /// Delete file from OpenAI
-  Future<void> _deleteFileFromOpenAI(String apiKey, String fileId) async {
-    final url = Uri.parse('https://api.openai.com/v1/files/$fileId');
-
-    try {
-      await http.delete(
-        url,
-        headers: {'Authorization': 'Bearer $apiKey'},
-      );
-    } catch (e) {
-      // Ignore deletion errors
-      print('Failed to delete file $fileId: $e');
-    }
-  }
-
-  /// Call OpenAI Chat Completions with file references and structured outputs
-  Future<List<Map<String, dynamic>>> _callChatCompletionsWithFiles(
-    String apiKey,
-    List<Map<String, dynamic>> content, {
-    String model = 'gpt-5.2',
-  }) async {
-    final url = Uri.parse('https://api.openai.com/v1/responses');
-
-    final response = await http.post(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $apiKey',
-      },
-      body: jsonEncode({
-        'model': model,
-        'input': [
-          {'role': 'user', 'content': content}
-        ],
-        'text': {
+      final response = await OpenAI.instance.responses.create(
+        model: config?.model ?? _defaultOpenAIModel,
+        input: input,
+        // dart_openai passes extra fields through for Responses.
+        // If your version’s method signature is strict, see the note below.
+        text: {
           'format': {
             'type': 'json_schema',
             'name': 'task_extraction',
@@ -222,149 +143,54 @@ Return tasks as a structured JSON array.
             'strict': false
           }
         },
-        'max_output_tokens': 16384,
-      }),
-    );
+        maxOutputTokens: 2000,
+      ); // :contentReference[oaicite:3]{index=3}
 
-    if (response.statusCode != 200) {
-      throw Exception(
-          'OpenAI Chat Completions API error: ${response.statusCode} - ${response.body}');
+      // The package typically exposes something like outputText / toJson().
+      // Safest is to convert to JSON-map and then read output_text.
+      // Extract the output_text chunk (same approach you used before)
+      final outputs = (response.output as List).cast<Map<String, dynamic>>();
+      final msg = outputs.firstWhere((o) => o['type'] == 'message');
+      final content = (msg['content'] as List).cast<Map<String, dynamic>>();
+
+      final textChunk = content.firstWhere(
+        (c) => c['type'] == 'output_text',
+        orElse: () => {},
+      );
+
+      final rawText = textChunk['text'];
+      if (rawText == null) return [];
+
+      // 3) Parse JSON (sometimes SDKs already give Map, so handle both)
+      final decoded = rawText is String
+          ? (jsonDecode(rawText) as Map<String, dynamic>)
+          : (rawText as Map).cast<String, dynamic>();
+
+      // 4) Return tasks as List<Map<String,dynamic>>
+      final tasks = (decoded['tasks'] as List?) ?? const [];
+
+      return tasks.map((e) => (e as Map).cast<String, dynamic>()).toList();
+    } catch (e, st) {
+      logError('Failed to extract tasks from PDF: $e\n$st');
+      return null;
+    } finally {
+      try {
+        await OpenAI.instance.file.delete(fileId);
+      } catch (e, st) {
+        logError('Failed to delete file: $e\n$st');
+      }
     }
-
-    final jsonResponse = jsonDecode(response.body) as Map<String, dynamic>;
-    print(jsonResponse);
-    File('data/response.json').writeAsStringSync(jsonEncode(jsonResponse));
-
-    final tasks = _extractTasksFromResponsesApi(jsonResponse);
-
-    return tasks.cast<Map<String, dynamic>>();
   }
 
-  List<Map<String, dynamic>> _extractTasksFromResponsesApi(
-      Map<String, dynamic> resp) {
-    final output = (resp['output'] as List?) ?? const [];
-
-    // 1) Find the first "message" output block
-    final message = output.cast<Map>().firstWhere(
-          (o) => o['type'] == 'message',
-          orElse: () => {},
-        );
-
-    if (message.isEmpty) return [];
-
-    // 2) Find the first "output_text" content chunk
-    final content = (message['content'] as List?)?.cast<Map>() ?? const [];
-    final textChunk = content.firstWhere(
-      (c) => c['type'] == 'output_text',
-      orElse: () => {},
-    );
-
-    final rawText = textChunk['text'];
-    if (rawText == null) return [];
-
-    // 3) Parse JSON (sometimes SDKs already give Map, so handle both)
-    final Map<String, dynamic> decoded = rawText is String
-        ? (jsonDecode(rawText) as Map<String, dynamic>)
-        : (rawText as Map).cast<String, dynamic>();
-
-    // 4) Return tasks as List<Map<String,dynamic>>
-    final tasks = (decoded['tasks'] as List?) ?? const [];
-    return tasks.map((e) => (e as Map).cast<String, dynamic>()).toList();
-  }
-
-  /// Extract tasks using Google Gemini (updated for PDF support)
-  Future<List<Map<String, dynamic>>> _extractWithGemini(
-    AiConfig config, {
+  /// Extracts tasks from media files using configured AI provider
+  Future<List<Map<String, dynamic>>?> extractTasks({
     List<File>? images,
     File? voice,
     File? pdf,
   }) async {
-    if (config.geminiApiKey == null || config.geminiApiKey!.isEmpty) {
-      throw Exception('Gemini API key not configured');
-    }
-
-    final model = config.model ?? 'gemini-1.5-flash';
-    final url = Uri.parse(
-      'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=${config.geminiApiKey}',
-    );
-
-    final List<Map<String, dynamic>> parts = [];
-
-    // Add system prompt
-    parts.add({
-      'text': config.systemPrompt ?? defaultSystemPrompt,
-    });
-
-    // Add images
-    if (images != null) {
-      for (final image in images) {
-        final bytes = await image.readAsBytes();
-        final base64Image = base64Encode(bytes);
-        parts.add({
-          'inline_data': {
-            'mime_type': 'image/jpeg',
-            'data': base64Image,
-          }
-        });
-      }
-    }
-
-    // Add PDF
-    if (pdf != null) {
-      final bytes = await pdf.readAsBytes();
-      final base64Pdf = base64Encode(bytes);
-      parts.add({
-        'inline_data': {
-          'mime_type': 'application/pdf',
-          'data': base64Pdf,
-        }
-      });
-    }
-
-    // Add audio
-    if (voice != null) {
-      final bytes = await voice.readAsBytes();
-      final base64Audio = base64Encode(bytes);
-      parts.add({
-        'inline_data': {
-          'mime_type': 'audio/mp4',
-          'data': base64Audio,
-        }
-      });
-    }
-
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'contents': [
-          {'parts': parts}
-        ],
-        'generationConfig': {
-          'temperature': 0.7,
-          'maxOutputTokens': 8192,
-          'responseMimeType': 'application/json',
-        }
-      }),
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception(
-          'Gemini API error: ${response.statusCode} - ${response.body}');
-    }
-
-    final jsonResponse = jsonDecode(response.body) as Map<String, dynamic>;
-    final candidates = jsonResponse['candidates'] as List?;
-
-    if (candidates == null || candidates.isEmpty) {
-      return [];
-    }
-
-    final content = candidates[0]['content'] as Map<String, dynamic>;
-    final contentParts = content['parts'] as List;
-    final text = contentParts[0]['text'] as String;
-
-    return _parseTasksFromResponse(text);
+    final fileId = await _uploadPdfAndGetFileId(pdf!.path);
+    if (fileId == null) return null;
+    return extractTasksFromPdf(fileId: fileId, taskSchema: taskSchema);
   }
 
   /// Transcribe audio using OpenAI Whisper
@@ -425,4 +251,5 @@ Return tasks as a structured JSON array.
   }
 }
 
+/// Singleton instance of AiService
 final aiService = AiService();
